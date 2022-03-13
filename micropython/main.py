@@ -71,10 +71,10 @@ class Pulse:
     def __init__(
         self, color, length_wave_divider, increment, position, lifetime, blink
     ):
-        self.color = color
-        self.length_wave_divider = length_wave_divider
+        self._color = color
+        self._length_wave_divider = length_wave_divider
         self._increment = increment
-        self.position = position
+        self._position = position
         self.lifetime = lifetime
         self._blink = blink
         self.on = True
@@ -83,20 +83,47 @@ class Pulse:
         if self._blink:
             self.on = not self.on
 
-        self.position = self.position + self._increment
+        self._position = self._position + self._increment
         # print('ding.position % d' % ding.position)
         if (
-            self.position > led_count * SUBSTEPS and self._increment > 0
+            self._position > led_count * SUBSTEPS and self._increment > 0
         ):  # bounce at the end
             self._increment = -self._increment
         if (
-            self.position < -SUBSTEPS * SUBSTEPS // self.length_wave_divider
+            self._position < -SUBSTEPS * SUBSTEPS // self._length_wave_divider
             and self._increment < 0
         ):  # bounce at the start
             self._increment = -self._increment
         # print('ding.position %d' % ding.position)
         self.lifetime -= 1
         # print('alter %d' % alter)
+
+    def show(self, np, led_count):
+        start_led = (self._position // SUBSTEPS) + 1
+        stop_led = start_led + SUBSTEPS // self._length_wave_divider
+        start_led = max(0, start_led)  # nur positive anzeigen
+        stop_led = min(led_count, stop_led)
+        for led in range(start_led, stop_led):
+            # print('start_led % d, stop_led % s' % (start_led, stop_led))
+            wave_array_pos = (led * SUBSTEPS - self._position) // (
+                SUBSTEPS // self._length_wave_divider
+            )  # led - start_led) * ding.length_wave_divider
+            # print('ding.position % d start_led % d, wave_array_pos %d'%(ding.position, start_led, wave_array_pos))
+            if wave_array_pos < 0 or wave_array_pos > len(PULSE_ARRAY) - 1:
+                # print('wave_array_pos falsch %d' % wave_array_pos)
+                peter = 5
+            else:
+                value = PULSE_ARRAY[wave_array_pos]
+                if self.lifetime < 0:
+                    value = int(value + float(self.lifetime) / float(DIMM_TIME) * 127.0)
+                    value = max(0, value)
+                last_color = np[led]
+                red = min(value * self._color[0] + last_color[0], 255)
+                green = min(value * self._color[1] + last_color[1], 255)
+                blue = min(value * self._color[2] + last_color[2], 255)
+                np[led] = (red, green, blue)
+            if not self.on:
+                np[led] = (0, 0, 0)
 
 
 PREDEFINED_INCREMENTS = [5, 10, 20, 30, 80, 130, 200, 400, 500]
@@ -218,33 +245,7 @@ class ListPulses:
 
         np.fill((0, 0, 0))
         for pulse in self.pulse_list:
-            start_led = (pulse.position // SUBSTEPS) + 1
-            stop_led = start_led + SUBSTEPS // pulse.length_wave_divider
-            start_led = max(0, start_led)  # nur positive anzeigen
-            stop_led = min(led_count, stop_led)
-            for led in range(start_led, stop_led):
-                # print('start_led % d, stop_led % s' % (start_led, stop_led))
-                wave_array_pos = (led * SUBSTEPS - pulse.position) // (
-                    SUBSTEPS // pulse.length_wave_divider
-                )  # led - start_led) * ding.length_wave_divider
-                # print('ding.position % d start_led % d, wave_array_pos %d'%(ding.position, start_led, wave_array_pos))
-                if wave_array_pos < 0 or wave_array_pos > len(PULSE_ARRAY) - 1:
-                    # print('wave_array_pos falsch %d' % wave_array_pos)
-                    peter = 5
-                else:
-                    value = PULSE_ARRAY[wave_array_pos]
-                    if pulse.lifetime < 0:
-                        value = int(
-                            value + float(pulse.lifetime) / float(DIMM_TIME) * 127.0
-                        )
-                        value = max(0, value)
-                    last_color = np[led]
-                    red = min(value * pulse.color[0] + last_color[0], 255)
-                    green = min(value * pulse.color[1] + last_color[1], 255)
-                    blue = min(value * pulse.color[2] + last_color[2], 255)
-                    np[led] = (red, green, blue)
-                if not pulse.on:
-                    np[led] = (0, 0, 0)
+            pulse.show(np, led_count)
         np.write()
 
         for pulse in self.pulse_list:
@@ -283,37 +284,35 @@ class IdleTimeResetter:
 
 class ShowPulses:
     def __init__(self):
-        self.np = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
-        self.idle_counter = 1000
         self.fade_out_trigger = 0
-        self.blinki = False
+        self.np = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
         self.pulse_list = ListPulses()
         self.pulse_generator = PulseGenerator()
         self.idle_time_resetter = IdleTimeResetter()
 
-    def run_forever(self):
-        while True:
-            self.calculate_next_step()
-            # time.sleep(1.0)
-
     def calculate_next_step(self):
-        self.pulse_list.show(self.np)
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
             self.pulse_list.fade_out()
+            if self.pulse_list.is_empty():
+                if self.idle_time_resetter.time_over():
+                    self.pulse_generator.reset()
+        self.pulse_list.limit_pulses()
+
         duration_ms = button.get_button_pressed_ms()
-        if duration_ms is not None:  # Taster gedrueckt
+        if duration_ms is not None:
             print("Button %s ms" % duration_ms)
             pulse = self.pulse_generator.get_next_pulse(duration_ms)
             self.pulse_list.append(pulse)
         if AUTO_ON:
             if random.random() < 0.0001:
                 self.pulse_list.append(create_random_pulse())
-        self.pulse_list.limit_pulses()
 
-        if self.pulse_list.is_empty():
-            if self.idle_time_resetter.time_over():
-                self.pulse_generator.reset()
+        self.pulse_list.show(self.np)
+
+    def run_forever(self):
+        while True:
+            self.calculate_next_step()
 
 
 show_dinger = ShowPulses()
