@@ -77,6 +77,7 @@ class Pulse:
         self._led_length = led_length
         self._increment_substeps = increment
         self._position_substeps = -SUBSTEPS * led_length
+        self._led_distance_substeps = SUBSTEPS // self._led_length
         self.led_current = self._led_length * sum(self._color)
 
     def end_of_life(self):
@@ -101,6 +102,40 @@ class Pulse:
                 self._increment_substeps = -self._increment_substeps
 
     def show(self, np, led_count):
+        i_first_led = self._position_substeps // SUBSTEPS
+        position_first_led_substeps = (
+            self._position_substeps % self._led_distance_substeps
+        )
+
+        def get_value(i_led):
+            if not self._on:
+                return 0
+            position_actual_led_substeps = (
+                i_led * self._led_distance_substeps + position_first_led_substeps
+            )
+            if position_actual_led_substeps < 0:
+                return 0
+            if position_actual_led_substeps >= SUBSTEPS:
+                return 0
+            return PULSE_ARRAY[position_actual_led_substeps]
+
+        for i_led_0 in range(self._led_length):
+            value = get_value(i_led_0)
+            if self._lifetime < 0:
+                value = int(value + float(self._lifetime) / float(DIMM_TIME) * 127.0)
+                value = max(0, value)
+            i_led = i_first_led + i_led_0
+            if i_led < 0:
+                continue
+            if i_led >= led_count:
+                continue
+            last_color = np[i_led]
+            red = min(value * self._color[0] + last_color[0], 255)
+            green = min(value * self._color[1] + last_color[1], 255)
+            blue = min(value * self._color[2] + last_color[2], 255)
+            np[i_led] = (red, green, blue)
+
+    def show_(self, np, led_count):
         start_led = (self._position_substeps // SUBSTEPS) + 1
         stop_led = start_led + self._led_length
         start_led = max(0, start_led)  # nur positive anzeigen
