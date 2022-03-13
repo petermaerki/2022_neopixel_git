@@ -4,14 +4,54 @@ micropython.alloc_emergency_exception_buf(100)
 import time
 import random
 import math
-from machine import Pin
+from pyb import Pin, ExtInt
 
 
 import machine, neopixel  # brauch aktuelles pyboard, es geht mit 1.18
 
-taster = Pin("Y1", Pin.IN, Pin.PULL_UP)
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
+
+
+class Button:
+    def __init__(self, pin):
+        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
+        self.ticks_ms = None
+        self._button_pressed_ms = None
+        ExtInt(
+            self.pin,
+            ExtInt.IRQ_RISING_FALLING,
+            Pin.PULL_UP,
+            callback=self._callback_button,
+        )
+
+    def get_button_pressed_ms(self):
+        """
+        return None: If button not pressed
+        return duration_ms: if button was pressed
+        """
+        duration_ms = self._button_pressed_ms
+        self._button_pressed_ms = None
+        return duration_ms
+
+    def _callback_button(self, dummy):
+        # self.timer.init(period=10, mode=machine.Timer.ONE_SHOT, callback=self.callback_timer)
+        ticks_ms = time.ticks_ms()
+        while True:
+            duration_ms = time.ticks_diff(time.ticks_ms(), ticks_ms)
+            if duration_ms > 10:
+                break
+        unpressed = self.pin.value()
+        if unpressed:
+            if self.ticks_ms is None:
+                return
+            self._button_pressed_ms = time.ticks_diff(time.ticks_ms(), self.ticks_ms)
+            self.ticks_ms = None
+            return
+        self.ticks_ms = time.ticks_ms()
+
+
+button = Button("Y1")
 
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 DIMM_TIME = 500
@@ -118,7 +158,6 @@ class ShowPulses:
         self.np = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
         self.idle_counter = 1000
         self.counter = 0
-        self.button_debounce = 0
         self.blinki = False
         self.pulse_list = []
         self.dinger_liste_fertige = PREDEFINED_PULSES
@@ -194,17 +233,12 @@ class ShowPulses:
             self.pulse_list = neue_liste
             if len(lifetimes) > 0:
                 print("lebensdauer der %d dinger" % len(lifetimes), lifetimes)
-        if taster.value() == 0:  # Taster gedrueckt
-            # if len(self.dinger_liste) < anzahl_dinger_max: # limitiere die anzahl dinger
-            self.button_debounce = 3
-        if self.button_debounce > 0:  # debounce
-            self.button_debounce -= 1
-            if self.button_debounce == 1:
-                if len(self.dinger_liste_fertige) > 0:
-                    self.pulse_list.append(self.dinger_liste_fertige.pop(0))
-                    # print('ding eingefuegt, es hat jetzt %d dinger' % len(self.dinger_liste))
-                else:
-                    self.pulse_list.append(create_random_pulse())
+        duration_ms = button.get_button_pressed_ms()
+        if duration_ms is not None:  # Taster gedrueckt
+            if len(self.dinger_liste_fertige) > 0:
+                self.pulse_list.append(self.dinger_liste_fertige.pop(0))
+            else:
+                self.pulse_list.append(create_random_pulse())
         if AUTO_ON:
             if random.random() < 0.0001:
                 self.pulse_list.append(create_random_pulse())
