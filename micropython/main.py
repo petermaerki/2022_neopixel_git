@@ -68,17 +68,15 @@ COUNTER_MAX = 100
 
 
 class Pulse:
-    def __init__(
-        self, color, length_wave_divider, increment, position, lifetime, blink
-    ):
+    def __init__(self, color, led_length, increment, lifetime, blink):
         self._color = color
-        self._length_wave_divider = length_wave_divider
-        self._increment = increment
-        self._position = position
+        self._on = True
+        # Speed
         self._lifetime = lifetime
         self._blink = blink
-        self._on = True
-        self._led_length = SUBSTEPS // self._length_wave_divider
+        self._led_length = led_length
+        self._increment_substeps = increment
+        self._position_substeps = -SUBSTEPS * led_length
         self.led_current = self._led_length * sum(self._color)
 
     def end_of_life(self):
@@ -88,28 +86,28 @@ class Pulse:
         if self._blink:
             self._on = not self._on
 
-        self._position = self._position + self._increment
-        # print('ding.position % d' % ding.position)
-        if (
-            self._position > led_count * SUBSTEPS and self._increment > 0
-        ):  # bounce at the end
-            self._increment = -self._increment
-        if (
-            self._position < -SUBSTEPS * self._led_length and self._increment < 0
-        ):  # bounce at the start
-            self._increment = -self._increment
-        # print('ding.position %d' % ding.position)
         self._lifetime -= 1
-        # print('alter %d' % alter)
+        self._position_substeps = self._position_substeps + self._increment_substeps
+
+        if self._increment_substeps > 0:
+            # Forward
+            if self._position_substeps > SUBSTEPS * led_count:
+                # bounce at the end
+                self._increment_substeps = -self._increment_substeps
+        else:
+            # Backward
+            if self._position_substeps < -SUBSTEPS * self._led_length:
+                # bounce at the start
+                self._increment_substeps = -self._increment_substeps
 
     def show(self, np, led_count):
-        start_led = (self._position // SUBSTEPS) + 1
+        start_led = (self._position_substeps // SUBSTEPS) + 1
         stop_led = start_led + self._led_length
         start_led = max(0, start_led)  # nur positive anzeigen
         stop_led = min(led_count, stop_led)
         for led in range(start_led, stop_led):
             # print('start_led % d, stop_led % s' % (start_led, stop_led))
-            wave_array_pos = (led * SUBSTEPS - self._position) // (
+            wave_array_pos = (led * SUBSTEPS - self._position_substeps) // (
                 self._led_length
             )  # led - start_led) * ding.length_wave_divider
             # print('ding.position % d start_led % d, wave_array_pos %d'%(ding.position, start_led, wave_array_pos))
@@ -153,17 +151,15 @@ PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
 
 def create_random_pulse(duration_ms):
-    length = random.choice(PREDEFINED_LENGTHS)
-    length_wave_divider = SUBSTEPS // length
+    led_length = random.choice(PREDEFINED_LENGTHS)
     pulse = Pulse(
-        length_wave_divider=length_wave_divider,
+        led_length=led_length,
         color=random.choice(PREDEFINED_COLORS),
         # increment_auswahl = [3,5,10,20,30,80]
         increment=random.choice(
             PREDEFINED_INCREMENTS
         ),  # beispiel: bei increment = subschritte: 1 led
         # [subschritte// 20]
-        position=-(SUBSTEPS // length_wave_divider) * SUBSTEPS,
         lifetime=(random.choice(PREDEFINED_LIFETIMES) + DIMM_TIME),
         blink=random.random() < 0.05,
     )
@@ -174,33 +170,29 @@ def create_predefined_pulses():
     return [
         Pulse(
             color=(0, 2, 0),  # gruen
-            length_wave_divider=SUBSTEPS // 10,
+            led_length=10,
             increment=3,
-            position=-10 * SUBSTEPS,
             lifetime=1000,
             blink=False,
         ),
         Pulse(
             color=(0, 0, 2),  # blau
-            length_wave_divider=SUBSTEPS // 5,
+            led_length=5,
             increment=13,
-            position=-5 * SUBSTEPS,
             lifetime=1500,
             blink=False,
         ),
         Pulse(
             color=(2, 0, 0),  # red
-            length_wave_divider=SUBSTEPS // 3,
+            led_length=3,
             increment=120,
-            position=-3 * SUBSTEPS,
             lifetime=2000,
             blink=False,
         ),
         Pulse(
             color=(2, 2, 0),  # yellow
-            length_wave_divider=SUBSTEPS // 20,
+            led_length=20,
             increment=70,
-            position=-20 * SUBSTEPS,
             lifetime=2000,
             blink=False,
         ),
