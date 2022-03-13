@@ -50,30 +50,41 @@ class Pulse:
     """
     >>> np = NeopixelMock(20)
     >>> p = Pulse(strip_length_l=np.strip_length_l, color=(0,2,0), length_l=4, speed_bpl=3, lifetime_b=1000, blink=False)
-    >>> p._position_b = 7
-    >>> p.show(np)
-    3[(0, 14, 0)]
 
     >>> p._position_b = 6
     >>> p.show(np)
     2[(0, 0, 0)]
     3[(0, 62, 0)]
+    4[(0, 254, 0)]
+    5[(0, 62, 0)]
+
+    >>> p._position_b = 7
+    >>> p.show(np)
+    3[(0, 14, 0)]
+    4[(0, 220, 0)]
+    5[(0, 142, 0)]
+    6[(0, 0, 0)]
+
+    >>> p._position_b = -7
+    >>> p.show(np)
+    0[(0, 220, 0)]
+    1[(0, 14, 0)]
     """
 
     def __init__(self, strip_length_l, color, length_l, speed_bpl, lifetime_b, blink):
         self._color = color
         self._on = True
-        # Speed
+        self.strip_length_l = strip_length_l
         self._lifetime_b = lifetime_b
         self._blink = blink
         self._length_l = length_l
         self._speed_bpl = speed_bpl
-        self._position_b = 0
         self._waveform = create_waveform(length_l * speed_bpl)
         self.led_current = self._length_l * sum(self._color)
         self._forward = True
+        self._position_b = -length_l * speed_bpl
         self._start_b = 0
-        self._end_b = strip_length_l * speed_bpl
+        self._end_b = (strip_length_l - length_l) * speed_bpl
 
     def end_of_life(self):
         return self._lifetime_b < -DIMM_TIME
@@ -116,9 +127,7 @@ class Pulse:
                 value = int(value + float(self._lifetime_b) / DIMM_TIME_FLOAT * 127.0)
                 value = max(0, value)
             i_led = first_led_relative_l + i_led_0
-            if i_led < 0:
-                continue
-            if i_led >= self._length_l:
+            if  not 0 <= i_led < self.strip_length_l:
                 continue
             last_color = np[i_led]
             red = min(value * self._color[0] + last_color[0], 255)
