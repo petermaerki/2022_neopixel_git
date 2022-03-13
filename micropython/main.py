@@ -17,30 +17,6 @@ taster_gnd.value(0)
 
 AUTOMATISCH_LEUCHTE = False  # ohne automatik leuchtet es erst auf knopfdruck
 
-KETTE = 50
-STREIFEN = 5 * 96
-# streifen = 2 * 144
-LEDS = STREIFEN  # kette+streifen
-np = neopixel.NeoPixel(machine.Pin.board.Y12, LEDS, bpp=3, timing=1)
-"""
-for i in range(leds):
-    np[i] = (255, 0, 0)
-    np.write()
-"""
-np.fill((0, 0, 0))
-np.write()
-
-
-while False:
-    peter = 5
-    np.fill((0, 0, 0))
-    for i in range(200):
-        np[i] = (0, 0, 255)
-        np.write()
-        time.sleep(1.0)
-        np[i] = (0, 0, 80)
-    print(time.time())
-
 
 ABDUNKELPHASE = 500
 
@@ -140,12 +116,17 @@ dinger_liste_fertige_fix = [
 
 class ShowDinger:
     def __init__(self):
+        self.np = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
         self.idle_counter = 1000
         self.counter = 0
         self.ding_einfuegen = 0
         self.blinki = False
         self.dinger_liste = []
         self.dinger_liste_fertige = dinger_liste_fertige_fix
+
+    @property
+    def leds(self):
+        return self.np.n
 
     def run_forever(self):
         while True:
@@ -154,12 +135,12 @@ class ShowDinger:
 
     def show_dinger(self):
         if len(self.dinger_liste) > 0:
-            np.fill((0, 0, 0))
+            self.np.fill((0, 0, 0))
             for ding in self.dinger_liste:
                 start_led = (ding.position // SUBSCHRITTE) + 1
                 stop_led = start_led + SUBSCHRITTE // ding.length_wave_divider
                 start_led = max(0, start_led)  # nur positive anzeigen
-                stop_led = min(LEDS, stop_led)
+                stop_led = min(self.leds, stop_led)
                 for led in range(start_led, stop_led):
                     # print('start_led % d, stop_led % s' % (start_led, stop_led))
                     wave_array_pos = (led * SUBSCHRITTE - ding.position) // (
@@ -177,17 +158,17 @@ class ShowDinger:
                                 + float(ding.lebensdauer) / float(ABDUNKELPHASE) * 127.0
                             )
                             value = max(0, value)
-                        vorher = np.__getitem__(led)
+                        vorher = self.np[led]
                         farbe0 = min(value * ding.farbe[0] + vorher[0], 255)
                         farbe1 = min(value * ding.farbe[1] + vorher[1], 255)
                         farbe2 = min(value * ding.farbe[2] + vorher[2], 255)
-                        np.__setitem__(led, (farbe0, farbe1, farbe2))
+                        self.np[led] = (farbe0, farbe1, farbe2)
                     if ding.blink and self.blinki:
-                        np.__setitem__(led, (0, 0, 0))
+                        self.np[led] = (0, 0, 0)
                 ding.position = ding.position + ding.increment
                 # print('ding.position % d' % ding.position)
                 if (
-                    ding.position > LEDS * SUBSCHRITTE and ding.increment > 0
+                    ding.position > self.leds * SUBSCHRITTE and ding.increment > 0
                 ):  # bounce at the end
                     ding.increment = -ding.increment
                 if (
@@ -199,7 +180,7 @@ class ShowDinger:
                 # print('ding.position %d' % ding.position)
                 ding.lebensdauer -= 1
                 # print('alter %d' % alter)
-            np.write()
+            self.np.write()
             self.blinki = not self.blinki
         self.counter += 1
         if self.counter % COUNTER_MAX == 0:
