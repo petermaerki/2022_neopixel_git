@@ -99,7 +99,7 @@ PREDEFINED_COLORS = [
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
 
-def create_random_pulse():
+def create_random_pulse(duration_ms):
     length = random.choice(PREDEFINED_LENGTHS)
     length_wave_divider = SUBSTEPS // length
     pulse = Pulse(
@@ -152,6 +152,17 @@ PREDEFINED_PULSES = [
     ),
 ]
 
+class PulseGenerator:
+    def __init__(self):
+        self._queue = PREDEFINED_PULSES
+
+    def reset(self):
+        self._queue = PREDEFINED_PULSES
+
+    def get_next_pulse(self, duration_ms):
+        if len(self._queue) > 0:
+            return self._queue.pop(0)
+        return create_random_pulse(duration_ms)
 
 class ShowPulses:
     def __init__(self):
@@ -160,7 +171,7 @@ class ShowPulses:
         self.counter = 0
         self.blinki = False
         self.pulse_list = []
-        self.dinger_liste_fertige = PREDEFINED_PULSES
+        self.pulse_generator = PulseGenerator()
 
     @property
     def led_count(self):
@@ -235,10 +246,9 @@ class ShowPulses:
                 print("lebensdauer der %d dinger" % len(lifetimes), lifetimes)
         duration_ms = button.get_button_pressed_ms()
         if duration_ms is not None:  # Taster gedrueckt
-            if len(self.dinger_liste_fertige) > 0:
-                self.pulse_list.append(self.dinger_liste_fertige.pop(0))
-            else:
-                self.pulse_list.append(create_random_pulse())
+            print("Button %s ms" % duration_ms)
+            pulse = self.pulse_generator.get_next_pulse(duration_ms)
+            self.pulse_list.append(pulse)
         if AUTO_ON:
             if random.random() < 0.0001:
                 self.pulse_list.append(create_random_pulse())
@@ -257,7 +267,7 @@ class ShowPulses:
             self.idle_counter += 1
             print("idle_counter %d" % self.idle_counter)
             if self.idle_counter > 200:
-                self.dinger_liste_fertige = PREDEFINED_PULSES
+                self.pulse_generator.reset()
             time.sleep(0.1)
         else:
             self.idle_counter = 0
