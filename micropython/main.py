@@ -63,7 +63,7 @@ for i in range(SUBSTEPS):
     phase = i / SUBSTEPS * 2 * math.pi
     PULSE_ARRAY[i] = int(0.5 * 255.0 * (-math.cos(phase) * 0.5 + 0.5) ** 2)
 # print (wave_array)
-PULSE_COUNT_MAX = 10  # vorsicht: stromverbrauch
+LED_CURRENT_MAX = 1200  # vorsicht: stromverbrauch
 COUNTER_MAX = 100
 
 
@@ -75,13 +75,18 @@ class Pulse:
         self._length_wave_divider = length_wave_divider
         self._increment = increment
         self._position = position
-        self.lifetime = lifetime
+        self._lifetime = lifetime
         self._blink = blink
-        self.on = True
+        self._on = True
+        self._led_length = SUBSTEPS // self._length_wave_divider
+        self.led_current = self._led_length * sum(self._color)
+
+    def end_of_life(self):
+        return self._lifetime < -DIMM_TIME
 
     def do_increment(self, led_count):
         if self._blink:
-            self.on = not self.on
+            self._on = not self._on
 
         self._position = self._position + self._increment
         # print('ding.position % d' % ding.position)
@@ -90,23 +95,22 @@ class Pulse:
         ):  # bounce at the end
             self._increment = -self._increment
         if (
-            self._position < -SUBSTEPS * SUBSTEPS // self._length_wave_divider
-            and self._increment < 0
+            self._position < -SUBSTEPS * self._led_length and self._increment < 0
         ):  # bounce at the start
             self._increment = -self._increment
         # print('ding.position %d' % ding.position)
-        self.lifetime -= 1
+        self._lifetime -= 1
         # print('alter %d' % alter)
 
     def show(self, np, led_count):
         start_led = (self._position // SUBSTEPS) + 1
-        stop_led = start_led + SUBSTEPS // self._length_wave_divider
+        stop_led = start_led + self._led_length
         start_led = max(0, start_led)  # nur positive anzeigen
         stop_led = min(led_count, stop_led)
         for led in range(start_led, stop_led):
             # print('start_led % d, stop_led % s' % (start_led, stop_led))
             wave_array_pos = (led * SUBSTEPS - self._position) // (
-                SUBSTEPS // self._length_wave_divider
+                self._led_length
             )  # led - start_led) * ding.length_wave_divider
             # print('ding.position % d start_led % d, wave_array_pos %d'%(ding.position, start_led, wave_array_pos))
             if wave_array_pos < 0 or wave_array_pos > len(PULSE_ARRAY) - 1:
@@ -114,15 +118,17 @@ class Pulse:
                 peter = 5
             else:
                 value = PULSE_ARRAY[wave_array_pos]
-                if self.lifetime < 0:
-                    value = int(value + float(self.lifetime) / float(DIMM_TIME) * 127.0)
+                if self._lifetime < 0:
+                    value = int(
+                        value + float(self._lifetime) / float(DIMM_TIME) * 127.0
+                    )
                     value = max(0, value)
                 last_color = np[led]
                 red = min(value * self._color[0] + last_color[0], 255)
                 green = min(value * self._color[1] + last_color[1], 255)
                 blue = min(value * self._color[2] + last_color[2], 255)
                 np[led] = (red, green, blue)
-            if not self.on:
+            if not self._on:
                 np[led] = (0, 0, 0)
 
 
@@ -223,19 +229,29 @@ class ListPulses:
 
     def append(self, pulse):
         self.pulse_list.append(pulse)
+        self._limit_pulses()
 
-    def fade_out(self):
-        lifetimes = []
-        neue_liste = []
+    def _led_current(self):
+        led_current = 0
         for pulse in self.pulse_list:
-            if pulse.lifetime > -DIMM_TIME:
-                neue_liste.append(pulse)
-                lifetimes.append(pulse.lifetime)
-            else:
-                print("stirbt, es hat jetzt %d dinger" % (len(self.pulse_list) - 1))
-        self.pulse_list = neue_liste
-        if len(lifetimes) > 0:
-            print("lebensdauer der %d dinger" % len(lifetimes), lifetimes)
+            led_current += pulse.led_current
+        return led_current
+
+    def _limit_pulses(self):
+        if self._led_current() > LED_CURRENT_MAX:
+            del self.pulse_list[0]
+            print("limit_pulses() to %d" % LED_CURRENT_MAX)
+
+    def end_of_life(self):
+        for pulse in self.pulse_list:
+            if pulse.end_of_life():
+                self.pulse_list.remove(pulse)
+                # We have to leave the loop after manipulating the list
+                print(
+                    "pulse end_of_life(): %d remaining active pulses"
+                    % len(self.pulse_list)
+                )
+                return
 
     def show(self, np):
         if len(self.pulse_list) == 0:
@@ -250,19 +266,6 @@ class ListPulses:
 
         for pulse in self.pulse_list:
             pulse.do_increment(led_count)
-
-    def limit_pulses(self):
-        too_many_pulses = len(self.pulse_list) - PULSE_COUNT_MAX
-        if too_many_pulses > 0:  # zu viele, aeltester sterben lassen
-            for i in range(too_many_pulses):
-                if self.pulse_list[i].lifetime > 0:
-                    self.pulse_list[i].lifetime = 0
-                    print(
-                        "reduziere lebensdauer da %d zuviele dinger" % too_many_pulses
-                    )
-            if too_many_pulses > 4:
-                del self.pulse_list[0]
-                print("geloescht da %d zuviele dinger" % too_many_pulses)
 
 
 class IdleTimeResetter:
@@ -289,15 +292,15 @@ class ShowPulses:
         self.pulse_list = ListPulses()
         self.pulse_generator = PulseGenerator()
         self.idle_time_resetter = IdleTimeResetter()
+        self.np.write()
 
     def calculate_next_step(self):
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
-            self.pulse_list.fade_out()
+            self.pulse_list.end_of_life()
             if self.pulse_list.is_empty():
                 if self.idle_time_resetter.time_over():
                     self.pulse_generator.reset()
-        self.pulse_list.limit_pulses()
 
         duration_ms = button.get_button_pressed_ms()
         if duration_ms is not None:
