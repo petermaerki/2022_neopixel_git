@@ -11,6 +11,11 @@ import machine, neopixel  # brauch aktuelles pyboard, es geht mit 1.18
 
 from portable_pulse import Pulse, DIMM_TIME
 
+import performance_test
+
+performance_test.test()
+
+
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
 
@@ -86,15 +91,18 @@ NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
 
 def create_random_pulse(duration_ms):
     length_l = random.choice(PREDEFINED_LENGTHS_L)
+    speed_bpl = duration_ms // 200
+    speed_bpl = min(50, max(1, speed_bpl))
     pulse = Pulse(
         strip_length_l=NP.n,
         length_l=length_l,
         color=random.choice(PREDEFINED_COLORS),
         # increment_auswahl = [3,5,10,20,30,80]
-        speed_bpl=random.choice(
-            PREDEFINED_SPEED_BPL
-        ),  # beispiel: bei increment = subschritte: 1 led
+        # speed_bpl=random.choice(
+        #     PREDEFINED_SPEED_BPL
+        # ),  # beispiel: bei increment = subschritte: 1 led
         # [subschritte// 20]
+        speed_bpl=speed_bpl,
         lifetime_b=random.choice(PREDEFINED_LIFETIMES) + DIMM_TIME,
         blink=random.random() < 0.05,
     )
@@ -123,7 +131,7 @@ def create_predefined_pulses():
             strip_length_l=NP.n,
             color=(2, 0, 0),  # red
             length_l=3,
-            speed_bpl=120,
+            speed_bpl=1,  # 120,
             lifetime_b=2000,
             blink=False,
         ),
@@ -185,11 +193,6 @@ class ListPulses:
                 return
 
     def show(self, np):
-        if len(self.pulse_list) == 0:
-            return
-
-        led_count = np.n
-
         np.fill((0, 0, 0))
         for pulse in self.pulse_list:
             pulse.show(np)
@@ -222,11 +225,16 @@ class ShowPulses:
         self.pulse_list = ListPulses()
         self.pulse_generator = PulseGenerator()
         self.idle_time_resetter = IdleTimeResetter()
+        self._last_time_ms = time.ticks_ms()
         NP.write()
 
     def calculate_next_step(self):
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
+            time_ms = time.ticks_ms()
+            duration_ms = time.ticks_diff(time_ms, self._last_time_ms)
+            self._last_time_ms = time_ms
+            print("%0.2f beats per second" % (1000.0 * COUNTER_MAX / duration_ms))
             self.pulse_list.end_of_life()
             if self.pulse_list.is_empty():
                 if self.idle_time_resetter.time_over():
