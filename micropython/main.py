@@ -7,13 +7,15 @@ import math
 from pyb import Pin, ExtInt
 
 
-import machine, neopixel  # brauch aktuelles pyboard, es geht mit 1.18
+import machine
+from neopixel_int import NeoPixel
 
 from portable_pulse import Pulse, DIMM_TIME
 
-import performance_test
+if False:
+    import performance_test
 
-performance_test.test()
+    performance_test.test()
 
 
 taster_gnd = Pin("Y2", Pin.OUT)
@@ -86,13 +88,13 @@ PREDEFINED_COLORS = [
 ]
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
-NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96, bpp=3, timing=1)
+NP = NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 
 
 def create_random_pulse(duration_ms):
     length_l = random.choice(PREDEFINED_LENGTHS_L)
     speed_bpl = duration_ms // 200
-    speed_bpl = min(50, max(1, speed_bpl))
+    speed_bpl = min(20, max(1, speed_bpl))
     pulse = Pulse(
         strip_length_l=NP.n,
         length_l=length_l,
@@ -123,7 +125,7 @@ def create_predefined_pulses():
             strip_length_l=NP.n,
             color=(0, 0, 2),  # blau
             length_l=5,
-            speed_bpl=13,
+            speed_bpl=7,
             lifetime_b=1500,
             blink=False,
         ),
@@ -139,7 +141,7 @@ def create_predefined_pulses():
             strip_length_l=NP.n,
             color=(2, 2, 0),  # yellow
             length_l=20,
-            speed_bpl=70,
+            speed_bpl=6,
             lifetime_b=2000,
             blink=False,
         ),
@@ -193,7 +195,7 @@ class ListPulses:
                 return
 
     def show(self, np):
-        np.fill((0, 0, 0))
+        np.clear()
         for pulse in self.pulse_list:
             pulse.show(np)
         np.write()
