@@ -3,7 +3,6 @@ import micropython
 micropython.alloc_emergency_exception_buf(100)
 import time
 import random
-import math
 from pyb import Pin, ExtInt
 
 
@@ -71,19 +70,19 @@ AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
 PREDEFINED_SPEED_BPL = [5, 10, 20, 30, 80, 130, 200, 400, 500]
 PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
-PREDEFINED_COLORS = [
-    (2, 0, 0),  # red
-    (2, 1, 0),  # orange
+PREDEFINED_COLORS_GRB = [
+    (0, 2, 0),  # red
+    (1, 2, 0),  # orange
     (2, 2, 0),  # yellow
-    (1, 2, 0),  # giftgruen
-    (0, 2, 0),  # gruen
-    (0, 2, 1),  # grausiggruen
-    (0, 2, 2),  # cyan
-    (0, 1, 2),  # komischblau
+    (2, 1, 0),  # giftgruen
+    (2, 0, 0),  # gruen
+    (2, 0, 1),  # grausiggruen
+    (2, 0, 2),  # cyan
+    (1, 0, 2),  # komischblau
     (0, 0, 2),  # blau
-    (1, 0, 2),  # komischblau 2
-    (2, 0, 2),  # magenta
-    (2, 0, 1),  # komischpink
+    (0, 1, 2),  # komischblau 2
+    (0, 2, 2),  # magenta
+    (0, 2, 1),  # komischpink
     (2, 2, 2),  # weiss
 ]
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
@@ -98,7 +97,7 @@ def create_random_pulse(duration_ms):
     pulse = Pulse(
         strip_length_l=NP.n,
         length_l=length_l,
-        color=random.choice(PREDEFINED_COLORS),
+        color=random.choice(PREDEFINED_COLORS_GRB),
         # increment_auswahl = [3,5,10,20,30,80]
         # speed_bpl=random.choice(
         #     PREDEFINED_SPEED_BPL
@@ -195,7 +194,11 @@ class ListPulses:
                 return
 
     def show(self, np):
-        np.clear()
+        if len(self.pulse_list) == 0:
+            time.sleep_ms(2)
+            return
+
+        np.clear(0)
         for pulse in self.pulse_list:
             pulse.show(np)
         np.write()

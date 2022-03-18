@@ -28,7 +28,9 @@ limit_pulses() to 1200
 import time
 import math
 
-import machine, neopixel  # brauch aktuelles pyboard, es geht mit 1.18
+import machine
+import neopixel
+import builtins
 
 
 class Timeit:
@@ -54,6 +56,45 @@ def test():
     while t.go():
         pass
     calib = t.time("<calib>")
+
+    print("BYTEARRY micropython")
+    buf = builtins.bytearray(300)
+
+    t = Timeit(calib)
+    color = (1, 2, 3)
+    while t.go():
+        r, g, b = color
+    t.time("r, g, b = color")
+
+    t = Timeit(calib)
+    while t.go():
+        value = 2
+        i = 3
+        r, g, b = color
+        j = 3 * i
+        if r:
+            buf[j + 1] = min(255, buf[j + 1] + value * r)
+        if g:
+            buf[j] = min(255, buf[j] + value * g)
+        if b:
+            buf[j + 2] = min(255, buf[j + 2] + value * b)
+    t.time("display buf 'micropython'")
+
+    print("BYTEARRY hans")
+    t = Timeit(calib)
+    while t.go():
+        buf.inc(42, 1, color)
+    t.time("display buf 'micropython': buf.inc(i, 1, color)")
+
+    t = Timeit(calib)
+    while t.go():
+        buf.inc(42, 1, 1)
+    t.time("buf.inc(i, 1, 1)")
+
+    t = Timeit(calib)
+    while t.go():
+        buf.inc(42, 1, (1, 2, 3))
+    t.time("slow tuple: buf.inc(i, 1, (1, 2, 3))")
 
     print("NEOPIXEL")
     NP = neopixel.NeoPixel(machine.Pin.board.Y10, n=5 * 96, bpp=3, timing=1)
@@ -128,3 +169,4 @@ def test():
     while t.go():
         d = int(x)
     t.time("d = int(x)")
+

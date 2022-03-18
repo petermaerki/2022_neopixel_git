@@ -25,6 +25,10 @@ def create_waveform(lenght):
     >>> waveform = create_waveform(12)
     >>> list(map(int, waveform))
     [0, 0, 7, 31, 71, 110, 127, 110, 71, 31, 7, 0]
+
+    >>> waveform = create_waveform(12)
+    >>> list(map(int, waveform))
+    [0, 0, 7, 31, 71, 110, 127, 110, 71, 31, 7, 0]
     """
     # wave_array is an array with integers to max 255/2, colors
     waveform = [0] * lenght
@@ -113,7 +117,7 @@ class Pulse:
             i_led = first_led_relative_l + i_led_0
             if not 0 <= i_led < self.strip_length_l:
                 continue
-            np.add(i_led, value, self._color)
+            np.inc(i_led, value, self._color)
 
             if MOCKED:
                 np.trace(i_led)
