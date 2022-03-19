@@ -24,7 +24,7 @@ def create_waveform(lenght):
     """
     >>> waveform = create_waveform(3)
     >>> list(map(int, waveform))
-    [32, 64, 32]
+    [5, 128, 5]
 
     >>> waveform = create_waveform(12)
     >>> list(map(int, waveform))
@@ -55,15 +55,32 @@ class Pulse:
 
     >>> p._position_b = 7
     >>> p.show(np)
-    3:[0, 76, 0]
-    4:[0, 255, 0]
-    5:[0, 204, 0]
+    3:[0, 14, 0]
+    4:[0, 220, 0]
+    5:[0, 142, 0]
     6:[0, 0, 0]
 
     >>> p._position_b = -7
     >>> p.show(np)
     0:[0, 220, 0]
     1:[0, 14, 0]
+
+
+    >>> np = NeoPixel(None, 200)
+    >>> p = Pulse(strip_length_l=np.n, color=(1.0, 0, 0), length_l=10, speed_bpl=3, lifetime_b=42, blink=False)
+    >>> p._position_b = 46
+    >>> p._lifetime_b = -56
+    >>> p.show(np)
+    16:[0, 0, 0]
+    17:[6, 0, 0]
+    18:[33, 0, 0]
+    19:[78, 0, 0]
+    20:[110, 0, 0]
+    21:[103, 0, 0]
+    22:[63, 0, 0]
+    23:[22, 0, 0]
+    24:[2, 0, 0]
+    25:[0, 0, 0]
     """
 
     def __init__(self, strip_length_l, color, length_l, speed_bpl, lifetime_b, blink):
@@ -110,48 +127,46 @@ class Pulse:
         first_led_relative_l = -(-self._position_b // self._speed_bpl)
         pos_begin_b = first_led_relative_l * self._speed_bpl - self._position_b
 
-        lifetime_dimmer = 0
-        if self._lifetime_b < 0:
-            lifetime_dimmer = int(float(self._lifetime_b) / DIMM_TIME_FLOAT * 127.0)
+        # self._lifetime_b >= 0: lifetime_factor = 1.0
+        # self._lifetime_b <= -DIMM_TIME: lifetime_factor = 0.0
+        lifetime_factor = max(0.0, min(1.0, 1.0 + self._lifetime_b/DIMM_TIME_FLOAT))
 
         for i_led_0 in range(self._length_l):
             try:
-                value = self._waveform[pos_begin_b + i_led_0 * self._speed_bpl]
+                value_256 = self._waveform[pos_begin_b + i_led_0 * self._speed_bpl]
             except KeyError:
                 continue
             # TODO: Move to C-Code
-            value = max(0, value + lifetime_dimmer)
+            value_256 *= lifetime_factor
             i_led = first_led_relative_l + i_led_0
             if not 0 <= i_led < self.strip_length_l:
                 continue
-            np.inc(i_led, value, self._color)
+            np.inc(i_led, value_256, self._color)
 
+            if False:
+                print("self._length_l", self._length_l)
+                print("value_256", value_256)
+                print("first_led_relative_l", first_led_relative_l)
+                print("lifetime_factor", lifetime_factor)
+                print("self._lifetime_b", self._lifetime_b)
+                print("self._position_b", self._position_b)
+                print("self._color", self._color)
+                print("self._waveform", self._waveform)
+                print("self._speed_bpl", self._speed_bpl)
+            #   np.trace(i_led)
             if MOCKED:
                 np.trace(i_led)
 
         # How to refactor this logic into C?
-        # for i_led_0 in range(self._length_l):
-        #     try:
-        #         value = self._waveform[pos_begin_b + i_led_0 * self._speed_bpl]
-        #     except KeyError:
-        #         continue
-        #     # TODO: Move to C-Code
-        #     value = max(0, value + lifetime_dimmer)
-        #     i_led = first_led_relative_l + i_led_0
-        #     if not 0 <= i_led < self.strip_length_l:
-        #         continue
-        #     np.inc(i_led, value, self._color)
 
-        #     if MOCKED:
-        #         np.trace(i_led)
+        # np.pulse(first_led_relative_l, lifetime_factor, color, self._waveform, pos_begin_b, self._speed_bpl)
 
-        # np.pulse(first_led_relative_l, color, lifetime_dimmer, self._waveform, pos_begin_b, self._speed_bpl)
-
+        # factor: limit to [0.0..1.0]
         # for i in range(9999):
-        #     value = self._self._waveform(i)
-        #     value = max(0, value + lifetime_dimmer)
+        #     value_256 = waveform(i+first_led_relative_l)
+        #     continue if out of range
+        #     value = value_256 * factor
         #     np.inc(first_led_relative_l, value, color)
-
 
 
 if __name__ == "__main__":

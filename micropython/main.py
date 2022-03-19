@@ -71,19 +71,19 @@ AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 PREDEFINED_SPEED_BPL = [5, 10, 20, 30, 80, 130, 200, 400, 500]
 PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
 PREDEFINED_COLORS_GRB = [
-    (0, 2, 0),  # red
-    (1, 2, 0),  # orange
-    (2, 2, 0),  # yellow
-    (2, 1, 0),  # giftgruen
-    (2, 0, 0),  # gruen
-    (2, 0, 1),  # grausiggruen
-    (2, 0, 2),  # cyan
-    (1, 0, 2),  # komischblau
-    (0, 0, 2),  # blau
-    (0, 1, 2),  # komischblau 2
-    (0, 2, 2),  # magenta
-    (0, 2, 1),  # komischpink
-    (2, 2, 2),  # weiss
+    (0, 1.0, 0),  # red
+    (0.5, 1.0, 0),  # orange
+    (1.0, 1.0, 0),  # yellow
+    (1.0, 0.5, 0),  # giftgruen
+    (1.0, 0, 0),  # gruen
+    (1.0, 0, 0.5),  # grausiggruen
+    (1.0, 0, 1.0),  # cyan
+    (0.5, 0, 1.0),  # komischblau
+    (0, 0, 1.0),  # blau
+    (0, 0.5, 1.0),  # komischblau 2
+    (0, 1.0, 1.0),  # magenta
+    (0, 1.0, 0.5),  # komischpink
+    (1.0, 1.0, 1.0),  # weiss
 ]
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
@@ -114,7 +114,7 @@ def create_predefined_pulses():
     return [
         Pulse(
             strip_length_l=NP.n,
-            color=(2, 0, 0),  # gruen
+            color=(1.0, 0, 0),  # gruen
             length_l=10,
             speed_bpl=3,
             lifetime_b=20,
@@ -122,7 +122,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 0, 2),  # blau
+            color=(0, 0, 1.0),  # blau
             length_l=5,
             speed_bpl=7,
             lifetime_b=1500,
@@ -130,7 +130,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 2, 0),  # red
+            color=(0, 1.0, 0),  # red
             length_l=3,
             speed_bpl=1,  # 120,
             lifetime_b=2000,
@@ -138,7 +138,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(2, 2, 0),  # yellow
+            color=(1.0, 1.0, 0),  # yellow
             length_l=20,
             speed_bpl=6,
             lifetime_b=2000,
@@ -178,6 +178,8 @@ class ListPulses:
         return led_current
 
     def _limit_pulses(self):
+        if True:
+            return
         if self._led_current() > LED_CURRENT_MAX:
             del self.pulse_list[0]
             print("limit_pulses() to %d" % LED_CURRENT_MAX)
