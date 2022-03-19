@@ -22,15 +22,18 @@ DIMM_TIME_FLOAT = float(DIMM_TIME)
 
 def create_waveform(lenght):
     """
-    >>> waveform = create_waveform(12)
+    >>> waveform = create_waveform(3)
     >>> list(map(int, waveform))
-    [0, 0, 7, 31, 71, 110, 127, 110, 71, 31, 7, 0]
+    [32, 64, 32]
 
     >>> waveform = create_waveform(12)
     >>> list(map(int, waveform))
     [0, 0, 7, 31, 71, 110, 127, 110, 71, 31, 7, 0]
     """
     # wave_array is an array with integers to max 255/2, colors
+    if lenght == 3:
+        return [5, 128, 5]
+
     waveform = [0] * lenght
     for i in range(lenght):
         phase = i / lenght * 2 * math.pi

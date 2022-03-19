@@ -114,7 +114,7 @@ def create_predefined_pulses():
     return [
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 2, 0),  # gruen
+            color=(2, 0, 0),  # gruen
             length_l=10,
             speed_bpl=3,
             lifetime_b=1000,
@@ -130,7 +130,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(2, 0, 0),  # red
+            color=(0, 2, 0),  # red
             length_l=3,
             speed_bpl=1,  # 120,
             lifetime_b=2000,
