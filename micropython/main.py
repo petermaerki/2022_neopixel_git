@@ -117,7 +117,7 @@ def create_predefined_pulses():
             color=(2, 0, 0),  # gruen
             length_l=10,
             speed_bpl=3,
-            lifetime_b=1000,
+            lifetime_b=20,
             blink=False,
         ),
         Pulse(

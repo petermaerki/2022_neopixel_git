@@ -104,19 +104,23 @@ class Pulse:
                 self._forward = True
 
     def show(self, np):
+        if not self._on:
+            return
+
         first_led_relative_l = -(-self._position_b // self._speed_bpl)
         pos_begin_b = first_led_relative_l * self._speed_bpl - self._position_b
 
+        lifetime_dimmer = 0
+        if self._lifetime_b < 0:
+            lifetime_dimmer = int(float(self._lifetime_b) / DIMM_TIME_FLOAT * 127.0)
+
         for i_led_0 in range(self._length_l):
-            if not self._on:
-                continue
             try:
                 value = self._waveform[pos_begin_b + i_led_0 * self._speed_bpl]
             except KeyError:
                 continue
-            if self._lifetime_b < 0:
-                value = int(value + float(self._lifetime_b) / DIMM_TIME_FLOAT * 127.0)
-                value = max(0, value)
+            # TODO: Move to C-Code
+            value = max(0, value + lifetime_dimmer)
             i_led = first_led_relative_l + i_led_0
             if not 0 <= i_led < self.strip_length_l:
                 continue
@@ -124,6 +128,30 @@ class Pulse:
 
             if MOCKED:
                 np.trace(i_led)
+
+        # How to refactor this logic into C?
+        # for i_led_0 in range(self._length_l):
+        #     try:
+        #         value = self._waveform[pos_begin_b + i_led_0 * self._speed_bpl]
+        #     except KeyError:
+        #         continue
+        #     # TODO: Move to C-Code
+        #     value = max(0, value + lifetime_dimmer)
+        #     i_led = first_led_relative_l + i_led_0
+        #     if not 0 <= i_led < self.strip_length_l:
+        #         continue
+        #     np.inc(i_led, value, self._color)
+
+        #     if MOCKED:
+        #         np.trace(i_led)
+
+        # np.pulse(first_led_relative_l, color, lifetime_dimmer, self._waveform, pos_begin_b, self._speed_bpl)
+
+        # for i in range(9999):
+        #     value = self._self._waveform(i)
+        #     value = max(0, value + lifetime_dimmer)
+        #     np.inc(first_led_relative_l, value, color)
+
 
 
 if __name__ == "__main__":

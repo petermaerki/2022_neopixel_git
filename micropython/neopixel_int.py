@@ -1,23 +1,25 @@
 # NeoPixel driver for MicroPython
 # MIT license; Copyright (c) 2016 Damien P. George, 2021 Jim Mussared
 
-MOCKED = True
-BYTEARRAY_FAST_HANS = False
 try:
+    MOCKED = True
     from machine import bitstream
-
     MOCKED = False
 
     def create_bytearray(n):
         return bytearray(n)
 
-    buf = bytearray(2)
-    BYTEARRAY_FAST_HANS = hasattr(buf, "clear")
 except:
 
     def create_bytearray(n):
         return n * [0]
 
+try:
+    LIB_LEDSTRIPE = False
+    import ledstripe
+    LIB_LEDSTRIPE = True
+except:
+    pass
 
 class NeoPixel:
     def __init__(self, pin, n):
@@ -27,13 +29,13 @@ class NeoPixel:
         if not MOCKED:
             self.pin.init(pin.OUT)
 
-        if BYTEARRAY_FAST_HANS:
-            self.clear = self.buf.clear
-            self.inc = self.buf.inc
-
         self.clear(0)
 
     def clear(self, _color=0):
+        if LIB_LEDSTRIPE:
+            ledstripe.clear(self.buf, 0)
+            return
+
         # Watch out: This method may be monkey patched in the constructor!
         for i in range(len(self.buf)):
             self.buf[i] = 0
@@ -46,6 +48,10 @@ class NeoPixel:
         print("%d:%s" % (i, str(v)))
 
     def inc(self, i, value, color):
+        if LIB_LEDSTRIPE:
+            ledstripe.inc(self.buf, i, value, color)
+            return
+
         # Watch out: This method may be monkey patched in the constructor!
         # color: G R B
         buf = self.buf
