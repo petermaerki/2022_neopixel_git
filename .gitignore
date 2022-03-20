@@ -1,3 +1,7 @@
+module_ledstrip/micropython
+module_ledstrip/src/build
+module_ledstrip/src/*.mpy
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
