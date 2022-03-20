@@ -18,25 +18,29 @@ effective_color256 = (color256*factor_65536)//65536
 try:
     MOCKED = True
     from machine import bitstream
+
     MOCKED = False
 
     def create_bytearray(n):
         return bytearray(n)
+
 
 except:
 
     def create_bytearray(n):
         return n * [0]
 
+
 try:
     LIB_LEDSTRIPE = False
-    if False:
-        import ledstrip
-        LIB_LEDSTRIPE = True
+    import ledstrip
+    LIB_LEDSTRIPE = True
 except:
     pass
 
-MAX_65536 = 255*255  # 65025
+
+MAX_65536 = 255 * 255  # 65025
+
 
 class NeoPixel:
     def __init__(self, pin, n):
@@ -65,15 +69,16 @@ class NeoPixel:
         print("%d:%s" % (i, str(v)))
 
     def add(self, i, factor_65536, color_rgb256):
+        assert not LIB_LEDSTRIPE
         assert isinstance(factor_65536, int)
         assert 0 <= factor_65536 <= MAX_65536
-        # TODO: shift right
-        _color_rgb256 = tuple((c*factor_65536)//65536 for c in color_rgb256)
+        _color_rgb256 = tuple((c * factor_65536) // 65536 for c in color_rgb256)
         for c in _color_rgb256:
             assert 0 <= c < 256
-        if LIB_LEDSTRIPE:
-            ledstrip.add(self.buf, i, 1, _color_rgb256)
-            return
+        if False:
+            if LIB_LEDSTRIPE:
+                ledstrip.add(self.buf, i, 1, _color_rgb256)
+                return
 
         # Watch out: This method may be monkey patched in the constructor!
         # color: G R B
@@ -81,15 +86,16 @@ class NeoPixel:
         r, g, b = _color_rgb256
         j = 3 * i
         if r:
-            buf[j + 1] = min(255, buf[j] + 1 * r)
+            buf[j + 1] = min(255, buf[j] + r)
         if g:
-            buf[j] = min(255, buf[j+1] + 1 * g)
+            buf[j] = min(255, buf[j + 1] + g)
         if b:
-            buf[j + 2] = min(255, buf[j+2] + 1 * b)
+            buf[j + 2] = min(255, buf[j + 2] + b)
 
     def write(self):
         # BITSTREAM_TYPE_HIGH_LOW = 0
         bitstream(self.pin, 0, (400, 850, 800, 450), self.buf)
+
 
 """
 import machine
@@ -98,5 +104,3 @@ np = neopixel_int.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 np.add(i=0, factor_65536=65000, color_rgb256=(255,0,0))
 np.write()
 """
-
-

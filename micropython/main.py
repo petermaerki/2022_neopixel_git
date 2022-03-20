@@ -7,7 +7,7 @@ from pyb import Pin, ExtInt
 
 
 import machine
-from neopixel_int import NeoPixel
+import portable_neopixel as neopixel
 
 from pulse_generator import PulseGenerator
 
@@ -70,9 +70,7 @@ button = Button("Y1")
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
 
-NP = NeoPixel(machine.Pin.board.Y12, n=5 * 96)
-
-
+NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 
 
 class ListPulses:

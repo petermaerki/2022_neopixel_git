@@ -13,7 +13,8 @@ position_lc: Position of a color within a led (G R B)
 """
 
 import math
-import neopixel_int
+
+import portable_neopixel as neopixel
 
 DIMM_TIME_L = 40
 DIMM_TIME_FLOAT = float(DIMM_TIME_L)
@@ -165,7 +166,8 @@ class Pulse:
         if not self._on:
             return
 
-        if neopixel_int.LIB_LEDSTRIPE:
+        # if neopixel.LIB_LEDSTRIPE:
+        if False:
             first_led_relative_l = -(-self._position_b // self._speed_divider_bpl)
             pos_begin_b = (
                 first_led_relative_l * self._speed_divider_bpl - self._position_b
@@ -228,6 +230,20 @@ class Pulse:
         lifetime_factor256 = max(0, lifetime_factor256)
         lifetime_factor256 = min(255, lifetime_factor256)
 
+        if neopixel.LIB_LEDSTRIPE:
+            assert isinstance(self._waveform, tuple)
+            assert isinstance(self._color_rgb256, tuple)
+            neopixel.ledstrip.pulse(
+                np.buf,
+                first_led_relative_l,
+                lifetime_factor256,
+                self._color_rgb256,
+                self._waveform,
+                pos_begin_b,
+                self._speed_divider_bpl,
+            )
+            return
+
         for i_led_0 in range(self.length_l):
             try:
                 value256 = self._waveform[
@@ -253,7 +269,7 @@ class Pulse:
                 print("self._waveform", self._waveform)
                 print("self._speed_divider_bpl", self._speed_divider_bpl)
             #   np.trace(i_led)
-            if neopixel_int.MOCKED:
+            if neopixel.MOCKED:
                 np.trace(i_led)
 
 
