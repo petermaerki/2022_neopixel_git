@@ -71,19 +71,19 @@ AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 PREDEFINED_SPEED_BPL = [5, 10, 20, 30, 80, 130, 200, 400, 500]
 PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
 PREDEFINED_COLORS_GRB = [
-    (0, 1.0, 0),  # red
-    (0.5, 1.0, 0),  # orange
-    (1.0, 1.0, 0),  # yellow
-    (1.0, 0.5, 0),  # giftgruen
-    (1.0, 0, 0),  # gruen
-    (1.0, 0, 0.5),  # grausiggruen
-    (1.0, 0, 1.0),  # cyan
-    (0.5, 0, 1.0),  # komischblau
-    (0, 0, 1.0),  # blau
-    (0, 0.5, 1.0),  # komischblau 2
-    (0, 1.0, 1.0),  # magenta
-    (0, 1.0, 0.5),  # komischpink
-    (1.0, 1.0, 1.0),  # weiss
+    (0, 100, 0),  # red
+    (50, 100, 0),  # orange
+    (100, 100, 0),  # yellow
+    (100, 50, 0),  # giftgruen
+    (100, 0, 0),  # gruen
+    (100, 0, 50),  # grausiggruen
+    (100, 0, 100),  # cyan
+    (50, 0, 100),  # komischblau
+    (0, 0, 100),  # blau
+    (0, 50, 100),  # komischblau 2
+    (0, 100, 100),  # magenta
+    (0, 100, 50),  # komischpink
+    (100, 100, 100),  # weiss
 ]
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
@@ -114,7 +114,7 @@ def create_predefined_pulses():
     return [
         Pulse(
             strip_length_l=NP.n,
-            color=(1.0, 0, 0),  # gruen
+            color=(100, 0, 0),  # gruen
             length_l=10,
             speed_bpl=3,
             lifetime_b=20,
@@ -122,7 +122,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 0, 1.0),  # blau
+            color=(0, 0, 100),  # blau
             length_l=5,
             speed_bpl=7,
             lifetime_b=1500,
@@ -130,7 +130,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 1.0, 0),  # red
+            color=(0, 100, 0),  # red
             length_l=3,
             speed_bpl=1,  # 120,
             lifetime_b=2000,
@@ -138,7 +138,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(1.0, 1.0, 0),  # yellow
+            color=(100, 100, 0),  # yellow
             length_l=20,
             speed_bpl=6,
             lifetime_b=2000,

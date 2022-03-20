@@ -14,7 +14,7 @@ CONCEPTS
 """
 
 import math
-from neopixel_int import NeoPixel, MOCKED
+from neopixel_int import NeoPixel, MOCKED, LIB_LEDSTRIPE
 
 DIMM_TIME = 500
 DIMM_TIME_FLOAT = float(DIMM_TIME)
@@ -32,13 +32,13 @@ def create_waveform(lenght):
     """
     # wave_array is an array with integers to max 255/2, colors
     if lenght == 3:
-        return [5, 128, 5]
+        return (5, 128, 5)
 
     waveform = [0] * lenght
     for i in range(lenght):
         phase = i / lenght * 2 * math.pi
         waveform[i] = int(0.5 * 255.0 * (-math.cos(phase) * 0.5 + 0.5) ** 2)
-    return waveform
+    return tuple(waveform)
 
 
 class Pulse:
@@ -48,22 +48,22 @@ class Pulse:
 
     >>> p._position_b = 6
     >>> p.show(np)
-    2:[0, 0, 0]
-    3:[0, 62, 0]
-    4:[0, 254, 0]
-    5:[0, 62, 0]
+    2:(0, 0, 0)
+    3:(0, 62, 0)
+    4:(0, 254, 0)
+    5:(0, 62, 0)
 
     >>> p._position_b = 7
     >>> p.show(np)
-    3:[0, 14, 0]
-    4:[0, 220, 0]
-    5:[0, 142, 0]
-    6:[0, 0, 0]
+    3:(0, 14, 0)
+    4:(0, 220, 0)
+    5:(0, 142, 0)
+    6:(0, 0, 0)
 
     >>> p._position_b = -7
     >>> p.show(np)
-    0:[0, 220, 0]
-    1:[0, 14, 0]
+    0:(0, 220, 0)
+    1:(0, 14, 0)
 
 
     >>> np = NeoPixel(None, 200)
@@ -71,16 +71,16 @@ class Pulse:
     >>> p._position_b = 46
     >>> p._lifetime_b = -56
     >>> p.show(np)
-    16:[0, 0, 0]
-    17:[6, 0, 0]
-    18:[33, 0, 0]
-    19:[78, 0, 0]
-    20:[110, 0, 0]
-    21:[103, 0, 0]
-    22:[63, 0, 0]
-    23:[22, 0, 0]
-    24:[2, 0, 0]
-    25:[0, 0, 0]
+    16:(0, 0, 0)
+    17:(6, 0, 0)
+    18:(33, 0, 0)
+    19:(78, 0, 0)
+    20:(110, 0, 0)
+    21:(103, 0, 0)
+    22:(63, 0, 0)
+    23:(22, 0, 0)
+    24:(2, 0, 0)
+    25:(0, 0, 0)
     """
 
     def __init__(self, strip_length_l, color, length_l, speed_bpl, lifetime_b, blink):
@@ -124,12 +124,51 @@ class Pulse:
         if not self._on:
             return
 
+        if LIB_LEDSTRIPE:
+            first_led_relative_l = -(-self._position_b // self._speed_bpl)
+            pos_begin_b = first_led_relative_l * self._speed_bpl - self._position_b
+
+            # self._lifetime_b >= 0: lifetime_factor = 100
+            # self._lifetime_b <= -DIMM_TIME: lifetime_factor = 0
+            # lifetime_factor = max(0.0, min(1.0, 1.0 + self._lifetime_b/DIMM_TIME_FLOAT))
+            lifetime_factor = max(0, min(100, 100 + (100 * self._lifetime_b) // DIMM_TIME))
+
+            if False:
+                for i in self._color:
+                    assert isinstance(i, int)
+                assert isinstance(lifetime_factor, int)
+                assert isinstance(first_led_relative_l, int)
+                assert isinstance(pos_begin_b, int)
+                assert isinstance(self._speed_bpl, int)
+                for i in self._waveform:
+                    assert isinstance(i, int)
+                print("first_led_relative_l", first_led_relative_l, type(first_led_relative_l))
+                print("lifetime_factor", lifetime_factor, type(lifetime_factor))
+                print("self._color", self._color, type(self._color))
+                print("self._waveform", self._waveform, type(self._waveform))
+                print("pos_begin_b", pos_begin_b, type(pos_begin_b))
+                print("self._speed_bpl", self._speed_bpl, type(self._speed_bpl))
+            assert isinstance(self._waveform, tuple)
+            assert isinstance(self._color, tuple)
+            ledstrip.pulse(
+                np.buf,
+                first_led_relative_l,
+                lifetime_factor,
+                self._color,
+                self._waveform,
+                pos_begin_b,
+                self._speed_bpl,
+            )
+            np.write()
+            # print([p for p in np.buf])
+            return
+
         first_led_relative_l = -(-self._position_b // self._speed_bpl)
         pos_begin_b = first_led_relative_l * self._speed_bpl - self._position_b
 
         # self._lifetime_b >= 0: lifetime_factor = 1.0
         # self._lifetime_b <= -DIMM_TIME: lifetime_factor = 0.0
-        lifetime_factor = max(0.0, min(1.0, 1.0 + self._lifetime_b/DIMM_TIME_FLOAT))
+        lifetime_factor = max(0.0, min(1.0, 1.0 + self._lifetime_b / DIMM_TIME_FLOAT))
 
         for i_led_0 in range(self._length_l):
             try:
@@ -157,22 +196,11 @@ class Pulse:
             if MOCKED:
                 np.trace(i_led)
 
-        # How to refactor this logic into C?
-
-        # np.pulse(first_led_relative_l, lifetime_factor, color, self._waveform, pos_begin_b, self._speed_bpl)
-
-        # factor: limit to [0.0..1.0]
-        # for i in range(9999):
-        #     value_256 = waveform(i+first_led_relative_l)
-        #     continue if out of range
-        #     value = value_256 * factor
-        #     np.inc(first_led_relative_l, value, color)
-
 
 if __name__ == "__main__":
     Pulse(
         strip_length_l=200,
-        color=(0, 2, 0),  # gruen
+        color=(0, 100, 0),  # gruen
         length_l=10,
         speed_bpl=5,
         lifetime_b=1000,

@@ -16,8 +16,9 @@ except:
 
 try:
     LIB_LEDSTRIPE = False
-    import ledstripe
-    LIB_LEDSTRIPE = True
+    if False:
+        import ledstrip
+        LIB_LEDSTRIPE = True
 except:
     pass
 
@@ -33,7 +34,7 @@ class NeoPixel:
 
     def clear(self, _color=0):
         if LIB_LEDSTRIPE:
-            ledstripe.clear(self.buf, 0)
+            ledstrip.clear(self.buf, 0)
             return
 
         # Watch out: This method may be monkey patched in the constructor!
@@ -44,14 +45,14 @@ class NeoPixel:
         buf = self.buf
         j = 3 * i
         v = (buf[j + 1], buf[j], buf[j + 2])
-        v = list(map(int, v))
+        v = tuple(map(int, v))
         print("%d:%s" % (i, str(v)))
 
     def inc(self, i, value, color):
         assert 0.0 <= value <= 256.0
         _color = tuple(int(c*value) for c in color)
         if LIB_LEDSTRIPE:
-            ledstripe.inc(self.buf, i, 1, _color)
+            ledstrip.inc(self.buf, i, 1, _color)
             return
 
         # Watch out: This method may be monkey patched in the constructor!
