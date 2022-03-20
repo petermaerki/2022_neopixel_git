@@ -70,20 +70,20 @@ AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
 PREDEFINED_SPEED_BPL = [5, 10, 20, 30, 80, 130, 200, 400, 500]
 PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
-PREDEFINED_COLORS_GRB = [
-    (0, 100, 0),  # red
-    (50, 100, 0),  # orange
-    (100, 100, 0),  # yellow
-    (100, 50, 0),  # giftgruen
-    (100, 0, 0),  # gruen
-    (100, 0, 50),  # grausiggruen
-    (100, 0, 100),  # cyan
-    (50, 0, 100),  # komischblau
-    (0, 0, 100),  # blau
-    (0, 50, 100),  # komischblau 2
-    (0, 100, 100),  # magenta
-    (0, 100, 50),  # komischpink
-    (100, 100, 100),  # weiss
+PREDEFINED_COLORS_GRB256 = [
+    (0, 255, 0),  # red
+    (127, 255, 0),  # orange
+    (255, 255, 0),  # yellow
+    (255, 127, 0),  # giftgruen
+    (255, 0, 0),  # gruen
+    (255, 0, 127),  # grausiggruen
+    (255, 0, 255),  # cyan
+    (127, 0, 255),  # komischblau
+    (0, 0, 255),  # blau
+    (0, 127, 255),  # komischblau 2
+    (0, 255, 255),  # magenta
+    (0, 255, 127),  # komischpink
+    (255, 255, 255),  # weiss
 ]
 PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
 
@@ -97,7 +97,7 @@ def create_random_pulse(duration_ms):
     pulse = Pulse(
         strip_length_l=NP.n,
         length_l=length_l,
-        color=random.choice(PREDEFINED_COLORS_GRB),
+        color_grb256=random.choice(PREDEFINED_COLORS_GRB256),
         # increment_auswahl = [3,5,10,20,30,80]
         # speed_bpl=random.choice(
         #     PREDEFINED_SPEED_BPL
@@ -114,7 +114,7 @@ def create_predefined_pulses():
     return [
         Pulse(
             strip_length_l=NP.n,
-            color=(100, 0, 0),  # gruen
+            color_grb256=(255, 0, 0),  # gruen
             length_l=10,
             speed_bpl=3,
             lifetime_b=20,
@@ -122,7 +122,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 0, 100),  # blau
+            color_grb256=(0, 0, 255),  # blau
             length_l=5,
             speed_bpl=7,
             lifetime_b=1500,
@@ -130,7 +130,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(0, 100, 0),  # red
+            color_grb256=(0, 255, 0),  # red
             length_l=3,
             speed_bpl=1,  # 120,
             lifetime_b=2000,
@@ -138,7 +138,7 @@ def create_predefined_pulses():
         ),
         Pulse(
             strip_length_l=NP.n,
-            color=(100, 100, 0),  # yellow
+            color_grb256=(255, 255, 0),  # yellow
             length_l=20,
             speed_bpl=6,
             lifetime_b=2000,

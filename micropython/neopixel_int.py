@@ -22,6 +22,8 @@ try:
 except:
     pass
 
+MAX_65536 = 255*255  # 65025
+
 class NeoPixel:
     def __init__(self, pin, n):
         self.pin = pin
@@ -50,7 +52,7 @@ class NeoPixel:
 
     def add(self, i, factor_65536, color256):
         assert isinstance(factor_65536, int)
-        assert 0 <= factor_65536 < 65536
+        assert 0 <= factor_65536 <= MAX_65536
         # TODO: shift right
         _color256 = tuple((c*factor_65536)//65536 for c in color256)
         for c in _color256:
