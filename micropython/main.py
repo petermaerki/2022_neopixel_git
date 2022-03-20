@@ -9,7 +9,7 @@ from pyb import Pin, ExtInt
 import machine
 from neopixel_int import NeoPixel
 
-from portable_pulse import Pulse, DIMM_TIME
+from portable_pulse import Pulse, DIMM_TIME_L
 
 if False:
     import performance_test
@@ -21,8 +21,10 @@ taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
 
 # print (wave_array)
-LED_CURRENT_MAX = 1200  # vorsicht: stromverbrauch
+LED_CURRENT_MAX = 50000  # vorsicht: stromverbrauch
 COUNTER_MAX = 100
+
+MIN_TIME_BEAT_MS = 1  # 50
 
 
 class Button:
@@ -68,81 +70,84 @@ button = Button("Y1")
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
 
-PREDEFINED_SPEED_BPL = [5, 10, 20, 30, 80, 130, 200, 400, 500]
+PREDEFINED_SPEED_DIVIDER_BPL = [5, 10, 1, 5, 2, 1, 6, 3, 10]
 PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
-PREDEFINED_COLORS_GRB256 = [
-    (0, 255, 0),  # red
-    (127, 255, 0),  # orange
+PREDEFINED_COLORS_RGB256 = [
+    (255, 0, 0),  # red
+    (255, 127, 0),  # orange
     (255, 255, 0),  # yellow
-    (255, 127, 0),  # giftgruen
-    (255, 0, 0),  # gruen
-    (255, 0, 127),  # grausiggruen
-    (255, 0, 255),  # cyan
-    (127, 0, 255),  # komischblau
+    (127, 255, 0),  # giftgruen
+    (0, 255, 0),  # gruen
+    (0, 255, 127),  # grausiggruen
+    (0, 255, 255),  # cyan
+    (0, 127, 255),  # komischblau
     (0, 0, 255),  # blau
-    (0, 127, 255),  # komischblau 2
-    (0, 255, 255),  # magenta
-    (0, 255, 127),  # komischpink
+    (127, 0, 255),  # komischblau 2
+    (255, 0, 255),  # magenta
+    (255, 0, 127),  # komischpink
     (255, 255, 255),  # weiss
 ]
-PREDEFINED_LIFETIMES = [3000, 4000, 5000, 7000, 15000]
+PREDEFINED_LIFETIMES_L = [50, 100, 200, 600, 1500]
 
 NP = NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 
 
 def create_random_pulse(duration_ms):
     length_l = random.choice(PREDEFINED_LENGTHS_L)
-    speed_bpl = duration_ms // 200
-    speed_bpl = min(20, max(1, speed_bpl))
+    # speed_divider_bpl = duration_ms // 200
+    # speed_divider_bpl = min(20, max(1, speed_divider_bpl))
+    speed_divider_bpl = random.choice(PREDEFINED_SPEED_DIVIDER_BPL)
     pulse = Pulse(
         strip_length_l=NP.n,
         length_l=length_l,
-        color_grb256=random.choice(PREDEFINED_COLORS_GRB256),
-        # increment_auswahl = [3,5,10,20,30,80]
-        # speed_bpl=random.choice(
-        #     PREDEFINED_SPEED_BPL
-        # ),  # beispiel: bei increment = subschritte: 1 led
-        # [subschritte// 20]
-        speed_bpl=speed_bpl,
-        lifetime_b=random.choice(PREDEFINED_LIFETIMES) + DIMM_TIME,
-        blink=random.random() < 0.05,
+        color_rgb256=random.choice(PREDEFINED_COLORS_RGB256),
+        speed_divider_bpl=speed_divider_bpl,
+        lifetime_l=random.choice(PREDEFINED_LIFETIMES_L) + DIMM_TIME_L,
+        # blink=random.random() < 0.05,
     )
     return pulse
+
+
+def create_pulse_killer():
+    return Pulse(
+        strip_length_l=NP.n,
+        color_rgb256=(255, 0, 0),  # red
+        length_l=3,
+        speed_divider_bpl=1,  # 120,
+        lifetime_l=800,
+        killer=True,
+    )
 
 
 def create_predefined_pulses():
     return [
         Pulse(
             strip_length_l=NP.n,
-            color_grb256=(255, 0, 0),  # gruen
+            color_rgb256=(0, 255, 0),  # gruen
             length_l=10,
-            speed_bpl=3,
-            lifetime_b=20,
-            blink=False,
+            speed_divider_bpl=3,
+            lifetime_l=400,
         ),
         Pulse(
             strip_length_l=NP.n,
-            color_grb256=(0, 0, 255),  # blau
+            color_rgb256=(0, 0, 255),  # blau
             length_l=5,
-            speed_bpl=7,
-            lifetime_b=1500,
-            blink=False,
+            speed_divider_bpl=7,
+            lifetime_l=1500,
         ),
         Pulse(
             strip_length_l=NP.n,
-            color_grb256=(0, 255, 0),  # red
+            color_rgb256=(255, 0, 0),  # red
             length_l=3,
-            speed_bpl=1,  # 120,
-            lifetime_b=2000,
-            blink=False,
+            speed_divider_bpl=2,
+            lifetime_l=800,
         ),
         Pulse(
             strip_length_l=NP.n,
-            color_grb256=(255, 255, 0),  # yellow
+            color_rgb256=(255, 255, 0),  # yellow
             length_l=20,
-            speed_bpl=6,
-            lifetime_b=2000,
-            blink=False,
+            speed_divider_bpl=6,
+            lifetime_l=1200,
         ),
     ]
 
@@ -169,7 +174,6 @@ class ListPulses:
 
     def append(self, pulse):
         self.pulse_list.append(pulse)
-        self._limit_pulses()
 
     def _led_current(self):
         led_current = 0
@@ -177,23 +181,24 @@ class ListPulses:
             led_current += pulse.led_current
         return led_current
 
-    def _limit_pulses(self):
-        if True:
-            return
-        if self._led_current() > LED_CURRENT_MAX:
-            del self.pulse_list[0]
-            print("limit_pulses() to %d" % LED_CURRENT_MAX)
+    def current_at_limit(self):
+        return self._led_current() > LED_CURRENT_MAX
 
     def end_of_life(self):
-        for pulse in self.pulse_list:
-            if pulse.end_of_life():
-                self.pulse_list.remove(pulse)
-                # We have to leave the loop after manipulating the list
-                print(
-                    "pulse end_of_life(): %d remaining active pulses"
-                    % len(self.pulse_list)
-                )
-                return
+        def purge_one_pulse():
+            for pulse in self.pulse_list:
+                if pulse.end_of_life():
+                    self.pulse_list.remove(pulse)
+                    # We have to leave the loop after manipulating the list
+                    print(
+                        "pulse end_of_life(): %d remaining active pulses"
+                        % len(self.pulse_list)
+                    )
+                    return True
+            return False
+
+        while purge_one_pulse():
+            pass
 
     def show(self, np):
         if len(self.pulse_list) == 0:
@@ -203,6 +208,7 @@ class ListPulses:
         np.clear(0)
         for pulse in self.pulse_list:
             pulse.show(np)
+            pulse.interact(self.pulse_list)
         np.write()
 
         for pulse in self.pulse_list:
@@ -235,7 +241,7 @@ class ShowPulses:
         self._last_time_ms = time.ticks_ms()
         NP.write()
 
-    def calculate_next_step(self):
+    def calculate_next_beat(self):
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
             time_ms = time.ticks_ms()
@@ -250,7 +256,11 @@ class ShowPulses:
         duration_ms = button.get_button_pressed_ms()
         if duration_ms is not None:
             print("Button %s ms" % duration_ms)
-            pulse = self.pulse_generator.get_next_pulse(duration_ms)
+            if self.pulse_list.current_at_limit():
+                print("current_at_limit: send killer")
+                pulse = create_pulse_killer()
+            else:
+                pulse = self.pulse_generator.get_next_pulse(duration_ms)
             self.pulse_list.append(pulse)
         if AUTO_ON:
             if random.random() < 0.0001:
@@ -260,7 +270,14 @@ class ShowPulses:
 
     def run_forever(self):
         while True:
-            self.calculate_next_step()
+            time_ms = time.ticks_ms()
+
+            self.calculate_next_beat()
+
+            slowdown_ms = MIN_TIME_BEAT_MS - time.ticks_diff(time.ticks_ms(), time_ms)
+            if slowdown_ms > 0:
+                print("slowdown_ms", slowdown_ms)
+                time.sleep_ms(slowdown_ms)
 
 
 show_dinger = ShowPulses()

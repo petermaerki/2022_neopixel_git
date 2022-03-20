@@ -1,5 +1,19 @@
-# NeoPixel driver for MicroPython
-# MIT license; Copyright (c) 2016 Damien P. George, 2021 Jim Mussared
+"""
+CONCEPT
+
+Everything 8 bit
+color256: 0..255
+factor_dimm256: 0..255
+factor_waveform256: 0..255
+
+factor_65536: 0..MAX_65536 # 65025
+
+CALCULATION
+
+factor_65536 = factor_waveform256*factor_dimm256
+effective_color256 = (color256*factor_65536)//65536
+"""
+
 
 try:
     MOCKED = True
@@ -50,29 +64,39 @@ class NeoPixel:
         v = tuple(map(int, v))
         print("%d:%s" % (i, str(v)))
 
-    def add(self, i, factor_65536, color256):
+    def add(self, i, factor_65536, color_rgb256):
         assert isinstance(factor_65536, int)
         assert 0 <= factor_65536 <= MAX_65536
         # TODO: shift right
-        _color256 = tuple((c*factor_65536)//65536 for c in color256)
-        for c in _color256:
+        _color_rgb256 = tuple((c*factor_65536)//65536 for c in color_rgb256)
+        for c in _color_rgb256:
             assert 0 <= c < 256
         if LIB_LEDSTRIPE:
-            ledstrip.add(self.buf, i, 1, _color256)
+            ledstrip.add(self.buf, i, 1, _color_rgb256)
             return
 
         # Watch out: This method may be monkey patched in the constructor!
         # color: G R B
         buf = self.buf
-        g, r, b = _color256
+        r, g, b = _color_rgb256
         j = 3 * i
-        if g:
-            buf[j + 1] = min(255, buf[j] + 1 * g)
         if r:
-            buf[j] = min(255, buf[j+1] + 1 * r)
+            buf[j + 1] = min(255, buf[j] + 1 * r)
+        if g:
+            buf[j] = min(255, buf[j+1] + 1 * g)
         if b:
             buf[j + 2] = min(255, buf[j+2] + 1 * b)
 
     def write(self):
         # BITSTREAM_TYPE_HIGH_LOW = 0
         bitstream(self.pin, 0, (400, 850, 800, 450), self.buf)
+
+"""
+import machine
+import neopixel_int
+np = neopixel_int.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
+np.add(i=0, factor_65536=65000, color_rgb256=(255,0,0))
+np.write()
+"""
+
+
