@@ -83,18 +83,18 @@ def test():
     print("BYTEARRY hans")
     t = Timeit(calib)
     while t.go():
-        buf.inc(42, 1, color)
-    t.time("display buf 'micropython': buf.inc(i, 1, color)")
+        buf.add(42, 1, color)
+    t.time("display buf 'micropython': buf.add(i, 1, color)")
 
     t = Timeit(calib)
     while t.go():
-        buf.inc(42, 1, 1)
-    t.time("buf.inc(i, 1, 1)")
+        buf.add(42, 1, 1)
+    t.time("buf.add(i, 1, 1)")
 
     t = Timeit(calib)
     while t.go():
-        buf.inc(42, 1, (1, 2, 3))
-    t.time("slow tuple: buf.inc(i, 1, (1, 2, 3))")
+        buf.add(42, 1, (1, 2, 3))
+    t.time("slow tuple: buf.add(i, 1, (1, 2, 3))")
 
     print("NEOPIXEL")
     NP = neopixel.NeoPixel(machine.Pin.board.Y10, n=5 * 96, bpp=3, timing=1)

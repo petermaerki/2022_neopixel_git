@@ -48,22 +48,26 @@ class NeoPixel:
         v = tuple(map(int, v))
         print("%d:%s" % (i, str(v)))
 
-    def inc(self, i, value, color):
-        assert 0.0 <= value <= 256.0
-        _color = tuple(int(c*value) for c in color)
+    def add(self, i, factor_65536, color256):
+        assert isinstance(factor_65536, int)
+        assert 0 <= factor_65536 < 65536
+        # TODO: shift right
+        _color256 = tuple((c*factor_65536)//65536 for c in color256)
+        for c in _color256:
+            assert 0 <= c < 256
         if LIB_LEDSTRIPE:
-            ledstrip.inc(self.buf, i, 1, _color)
+            ledstrip.add(self.buf, i, 1, _color256)
             return
 
         # Watch out: This method may be monkey patched in the constructor!
         # color: G R B
         buf = self.buf
-        r, g, b = _color
+        g, r, b = _color256
         j = 3 * i
-        if r:
-            buf[j + 1] = min(255, buf[j] + 1 * r)
         if g:
-            buf[j] = min(255, buf[j+1] + 1 * g)
+            buf[j + 1] = min(255, buf[j] + 1 * g)
+        if r:
+            buf[j] = min(255, buf[j+1] + 1 * r)
         if b:
             buf[j + 2] = min(255, buf[j+2] + 1 * b)
 
