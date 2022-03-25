@@ -20,7 +20,7 @@ void *memset(void *s, int c, size_t n)
 
 #define LENGTH_M 5
 #define COLORS 3
-#define LED_PER_M 95
+#define LED_PER_M 96
 #define BUF_LENGTH (COLORS * LED_PER_M * LENGTH_M)
 int16_t buf[BUF_LENGTH];
 
@@ -76,11 +76,9 @@ STATIC mp_obj_t array_int_pulse(size_t n_args, const mp_obj_t *args)
 
             for (size_t color_i = 0; color_i < color_len; color_i++)
             {
-                int16_t value_256 = (colors_grb65536[color_i] * waveform_256) / 65536;
+                int16_t value256 = (colors_grb65536[color_i] * waveform_256) / 65536;
 
-                int16_t value256_add = buf[current_led_lc + color_i] + value_256;
-                value256_add = max(0, min(255, value256_add));
-                buf[current_led_lc + color_i] = value256_add;
+                buf[current_led_lc + color_i] += value256;
             }
         }
 
@@ -90,6 +88,11 @@ STATIC mp_obj_t array_int_pulse(size_t n_args, const mp_obj_t *args)
             break;
         }
     }
+
+    // for (int i = 0; i < 3; i++)
+    // {
+    //     mp_printf(&mp_plat_print, "a i=%d buf=%d\n", i, buf[i]);
+    // }
 
     return mp_const_none; // return None, as per CPython
 }
@@ -102,7 +105,39 @@ STATIC mp_obj_t array_int_copy(mp_obj_t self_in)
 
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(self_in);
 
+    /*
+    ** Contribute negative colors to the positive ones
+    */
     size_t length = min(BUF_LENGTH, bytearray->len);
+    for (int i = 0; i < length; i += COLORS)
+    {
+        while (true)
+        {
+            int positive_numbers = 0;
+            int negative_numbers = 0;
+            for (int c = 0; c < COLORS; c++)
+            {
+                // mp_printf(&mp_plat_print, " i=%d, c=%d \n", i, c);
+                int16_t value256 = buf[i+c];
+                if (value256 >= 0)
+                {
+                    positive_numbers++;
+                }
+                else
+                {
+                    // mp_printf(&mp_plat_print, "negative %d %d %d->%d\n", c, buf[i + c], i + c, i + ((c + 1) % COLORS));
+                    negative_numbers++;
+                    buf[i + ((c + 1) % COLORS)] += value256;
+                    buf[i+c] = 0;
+                }
+            }
+            if ((negative_numbers == 0) || (positive_numbers == 0))
+            {
+                break;
+            }
+        }
+    }
+
     for (int i = 0; i < length; i++)
     {
         ((byte *)bytearray->items)[i] = (byte)min(255, max(0, buf[i]));

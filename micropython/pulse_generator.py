@@ -69,7 +69,7 @@ def create_predefined_pulses(np):
 class PulseGenerator:
     def __init__(self, np):
         self._np = np
-        self._waveform_long = WaveformLong(128)
+        self._waveform_long = WaveformLong(3*96)
         self.reset()
 
     def reset(self):
@@ -102,7 +102,7 @@ class PulseGenerator:
         return Pulse(
             strip_length_l=self._np.n,
             waveform=self._waveform_long,
-            color_rgb256=random.choice(PREDEFINED_COLORS_RGB256),
+            color_rgb256=(255, 127, 0), # random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
             lifetime_l=3 * self._np.n,
         )
