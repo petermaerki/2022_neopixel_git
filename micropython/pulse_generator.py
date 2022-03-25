@@ -2,8 +2,8 @@ from portable_pulse import Pulse, DIMM_TIME_L
 import random
 
 
-PREDEFINED_SPEED_DIVIDER_BPL = [5, 10, 1, 5, 2, 1, 6, 3, 10]
-PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
+# PREDEFINED_SPEED_DIVIDER_BPL = [5, 10, 1, 5, 2, 1, 6, 3, 10]
+# PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
 PREDEFINED_COLORS_RGB256 = [
     (255, 0, 0),  # red
     (255, 127, 0),  # orange
@@ -67,10 +67,14 @@ def create_predefined_pulses(np):
 
 
 def create_random_pulse(np, duration_ms):
-    length_l = random.choice(PREDEFINED_LENGTHS_L)
-    # speed_divider_bpl = duration_ms // 200
-    # speed_divider_bpl = min(20, max(1, speed_divider_bpl))
-    speed_divider_bpl = random.choice(PREDEFINED_SPEED_DIVIDER_BPL)
+    # length_l = random.choice(PREDEFINED_LENGTHS_L)
+    # speed_divider_bpl = random.choice(PREDEFINED_SPEED_DIVIDER_BPL)
+    length_l = max(1, duration_ms // 10)
+    # duration_ms=10: speed_divider_bpl=1
+    # duration_ms=2000: speed_divider_bpl=100
+    speed_divider_bpl = duration_ms // 40
+    speed_divider_bpl = min(20, max(1, speed_divider_bpl))
+    print("length_l=%d, speed_divider_bpl=%d" % (length_l, speed_divider_bpl))
     pulse = Pulse(
         strip_length_l=np.n,
         length_l=length_l,

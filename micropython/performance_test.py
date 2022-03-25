@@ -32,6 +32,8 @@ import machine
 import neopixel
 import builtins
 
+from portable_pulse import calculate_waveform_point256
+
 
 class Timeit:
     DURATION_US = 1000000
@@ -80,21 +82,21 @@ def test():
             buf[j + 2] = min(255, buf[j + 2] + value * b)
     t.time("display buf 'micropython'")
 
-    print("BYTEARRY hans")
-    t = Timeit(calib)
-    while t.go():
-        buf.add(42, 1, color)
-    t.time("display buf 'micropython': buf.add(i, 1, color)")
+    # print("BYTEARRY hans")
+    # t = Timeit(calib)
+    # while t.go():
+    #     buf.add(42, 1, color)
+    # t.time("display buf 'micropython': buf.add(i, 1, color)")
 
-    t = Timeit(calib)
-    while t.go():
-        buf.add(42, 1, 1)
-    t.time("buf.add(i, 1, 1)")
+    # t = Timeit(calib)
+    # while t.go():
+    #     buf.add(42, 1, 1)
+    # t.time("buf.add(i, 1, 1)")
 
-    t = Timeit(calib)
-    while t.go():
-        buf.add(42, 1, (1, 2, 3))
-    t.time("slow tuple: buf.add(i, 1, (1, 2, 3))")
+    # t = Timeit(calib)
+    # while t.go():
+    #     buf.add(42, 1, (1, 2, 3))
+    # t.time("slow tuple: buf.add(i, 1, (1, 2, 3))")
 
     print("NEOPIXEL")
     NP = neopixel.NeoPixel(machine.Pin.board.Y10, n=5 * 96, bpp=3, timing=1)
@@ -170,3 +172,13 @@ def test():
         d = int(x)
     t.time("d = int(x)")
 
+    print("WAVEFORM")
+    t = Timeit(calib)
+    while t.go():
+        value256 = calculate_waveform_point256(5, 20)
+    t.time("calculate_waveform_point256(5, 20)")
+
+    t = Timeit(calib)
+    while t.go():
+        v = math.cos(0.2)
+    t.time("v = math.cos(0.2)")

@@ -73,12 +73,6 @@ class NeoPixel:
         assert isinstance(factor_65536, int)
         assert 0 <= factor_65536 <= MAX_65536
         _color_rgb256 = tuple((c * factor_65536) // 65536 for c in color_rgb256)
-        for c in _color_rgb256:
-            assert 0 <= c < 256
-        if False:
-            if LIB_LEDSTRIPE:
-                ledstrip.add(self.buf, i, 1, _color_rgb256)
-                return
 
         # Watch out: This method may be monkey patched in the constructor!
         # color: G R B
