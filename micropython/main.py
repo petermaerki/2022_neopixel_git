@@ -75,8 +75,8 @@ MODE_WAVES = 1
 class Mode:
     def __init__(self):
         self.led_green = LED(2)
-        self.set(MODE_PULSES)
-
+        self.mode = MODE_PULSES
+        self.toggle_mode()
 
     def set(self, mode):
         self.mode = mode
@@ -85,6 +85,11 @@ class Mode:
         else:
             self.led_green.off()
 
+    def toggle_mode(self):
+        if self.mode == MODE_WAVES:
+            self.set(MODE_PULSES)
+        else:
+            self.set(MODE_WAVES)
 
 
 mode = Mode()
@@ -193,7 +198,10 @@ class ShowPulses:
             duration_ms = time_us - self._last_time_us
             self._last_time_us = timer_us()
 
-            print("%0.2f beats per second, led_current=%d" % (1000000.0 * COUNTER_MAX / duration_ms, self.pulse_list.led_current()))
+            print(
+                "%0.2f beats per second, led_current=%d"
+                % (1000000.0 * COUNTER_MAX / duration_ms, self.pulse_list.led_current())
+            )
             self.pulse_list.end_of_life()
             if self.pulse_list.is_empty():
                 if self.idle_time_resetter.time_over():
@@ -203,11 +211,16 @@ class ShowPulses:
         if duration_ms is not None:
             print("Button %d ms" % duration_ms)
             if duration_ms > 3000:
-                mode.set(MODE_WAVES)
+                mode.toggle_mode()
                 return
 
             current_at_limit = self.pulse_list.current_at_limit()
-            pulse = self.pulse_generator.get_next_pulse(duration_ms, current_at_limit)
+            if mode.mode == MODE_PULSES:
+                pulse = self.pulse_generator.get_next_pulse(
+                    duration_ms, current_at_limit
+                )
+            else:
+                pulse = self.pulse_generator.get_next_wave(super, current_at_limit)
             # print("pulse", pulse._waveform256)
             self.pulse_list.append(pulse)
 

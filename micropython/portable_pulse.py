@@ -52,6 +52,21 @@ class WaveformLinear:
             int(255 * (l + offset_l) / self.length_l) for l in range(self.length_l)
         )
 
+
+class WaveformLong:
+    def __init__(self, length_l):
+        # self.buf = bytearray(self.length_l)
+        # for l in range(length_l):
+        #     self.buf[l] = int(255*l/length_l)
+        # self.buf[0] = 127
+        # self.buf[1] = 127
+        self.length_l = length_l
+        self.buf = tuple(int(-16 + 32 * (l / length_l)) for l in range(length_l))
+
+    def waveform256(self, offset_l):
+        return self.buf
+
+
 def create_waveform256(length):
     """
     >>> create_waveform256(1)
@@ -123,7 +138,7 @@ class Pulse:
         self,
         strip_length_l,
         color_rgb256,
-        length_l,
+        waveform,
         speed_divider_bpl,
         lifetime_l,
         blink=False,
@@ -134,16 +149,19 @@ class Pulse:
         self._color_rgb256 = color_rgb256
         self.strip_length_l = strip_length_l
         self._lifetime_b = lifetime_l * speed_divider_bpl
-        self.length_l = length_l
+        self._waveform = waveform
         self._speed_divider_bpl = speed_divider_bpl
         self._blink = blink
         self._killer = killer
-        self.led_current = self.length_l
+        self.led_current = waveform.length_l
         self._forward = True
-        self._position_b = -length_l * speed_divider_bpl
+        self._position_b = -waveform.length_l * speed_divider_bpl
         self._start_b = 0
-        self._end_b = (strip_length_l - length_l) * speed_divider_bpl
-        self._waveform = WaveformPulse(self.length_l)
+        self._end_b = (strip_length_l - waveform.length_l) * speed_divider_bpl
+
+    @property
+    def length_l(self):
+        return self._waveform.length_l
 
     @property
     def position_start_l(self):
