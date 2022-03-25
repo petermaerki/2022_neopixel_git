@@ -54,40 +54,11 @@ class NeoPixel:
 
     def clear(self, _color=0):
         if LIB_LEDSTRIPE:
-            ledstrip.clear(self.buf, 0)
+            ledstrip.int_clear(self.buf, 0)
             return
 
-        # Watch out: This method may be monkey patched in the constructor!
-        for i in range(len(self.buf)):
-            self.buf[i] = 0
-
-    def trace(self, i):
-        buf = self.buf
-        j = 3 * i
-        v = (buf[j + 1], buf[j], buf[j + 2])
-        v = tuple(map(int, v))
-        print("%d:%s" % (i, str(v)))
-
-    def add(self, i, factor_65536, color_rgb256):
-        assert not LIB_LEDSTRIPE
-        assert isinstance(factor_65536, int)
-        assert 0 <= factor_65536 <= MAX_65536
-        _color_rgb256 = tuple((c * factor_65536) // 65536 for c in color_rgb256)
-
-        # Watch out: This method may be monkey patched in the constructor!
-        # color: G R B
-        buf = self.buf
-        r, g, b = _color_rgb256
-        j = 3 * i
-        if r:
-            buf[j + 1] = min(255, buf[j] + r)
-        if g:
-            buf[j] = min(255, buf[j + 1] + g)
-        if b:
-            buf[j + 2] = min(255, buf[j + 2] + b)
-
     def write(self):
-        # BITSTREAM_TYPE_HIGH_LOW = 0
+        ledstrip.int_copy(self.buf)
         bitstream(self.pin, 0, (400, 850, 800, 450), self.buf)
 
 

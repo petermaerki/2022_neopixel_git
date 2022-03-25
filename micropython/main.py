@@ -14,8 +14,6 @@ if False:
 
     performance_test.test()
 
-b = bytearray(9 * 1024)
-
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
 
