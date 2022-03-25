@@ -37,5 +37,5 @@ On docker prompt
 On host in git-top folder:
 
 ```
-copy module_ledstrip/str/ledstrip.mpy micropython
+cp module_ledstrip/src/ledstrip.mpy micropython
 ```
