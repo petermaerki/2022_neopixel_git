@@ -19,11 +19,38 @@ import portable_neopixel as neopixel
 DIMM_TIME_L = 40
 DIMM_TIME_FLOAT = float(DIMM_TIME_L)
 
-def calculate_waveform_point256(l, length):
-    phase = l / length * 2 * math.pi
-    value256 = int(254.0 * (-math.cos(phase) * 0.5 + 0.5) ** 2) + 1
-    assert 0 <= value256 < 256
-    return value256
+
+class WaveformPulse:
+    def __init__(self, length_l):
+        self.length_l = length_l
+        self._c1 = length_l / 2.0 / math.pi
+
+    def value256(self, l):
+        phase = l / self._c1
+        v = int(254.0 * (-math.cos(phase) * 0.5 + 0.5) ** 2) + 1
+        # assert 0 <= v < 256
+        return v
+
+    def waveform256(self, offset_l):
+        return tuple(self.value256(l + offset_l) for l in range(self.length_l))
+
+
+class WaveformOn:
+    def __init__(self, length_l):
+        self.length_l = length_l
+
+    def waveform256(self, offset_l):
+        return tuple(255 for l in range(self.length_l))
+
+
+class WaveformLinear:
+    def __init__(self, length_l):
+        self.length_l = length_l
+
+    def waveform256(self, offset_l):
+        return tuple(
+            int(255 * (l + offset_l) / self.length_l) for l in range(self.length_l)
+        )
 
 def create_waveform256(length):
     """
@@ -109,7 +136,6 @@ class Pulse:
         self._lifetime_b = lifetime_l * speed_divider_bpl
         self.length_l = length_l
         self._speed_divider_bpl = speed_divider_bpl
-        self._waveform256 = create_waveform256(length_l * speed_divider_bpl)
         self._blink = blink
         self._killer = killer
         self.led_current = self.length_l
@@ -117,6 +143,7 @@ class Pulse:
         self._position_b = -length_l * speed_divider_bpl
         self._start_b = 0
         self._end_b = (strip_length_l - length_l) * speed_divider_bpl
+        self._waveform = WaveformPulse(self.length_l)
 
     @property
     def position_start_l(self):
@@ -187,16 +214,16 @@ class Pulse:
         lifetime_factor256 = min(255, lifetime_factor256)
 
         if neopixel.LIB_LEDSTRIPE:
-            assert isinstance(self._waveform256, tuple)
-            assert isinstance(self._color_rgb256, tuple)
+            # assert isinstance(self._color_rgb256, tuple)
+            # assert isinstance(lifetime_factor256, int)
             neopixel.ledstrip.pulse(
                 np.buf,
                 first_led_relative_l,
                 lifetime_factor256,
                 self._color_rgb256,
-                self._waveform256,
-                pos_begin_b,
-                self._speed_divider_bpl,
+                self._waveform.waveform256(pos_begin_b / self._speed_divider_bpl),
+                0,  # pos_begin_b,
+                1,  # self._speed_divider_bpl,
             )
             return
 
