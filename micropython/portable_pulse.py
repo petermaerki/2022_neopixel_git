@@ -65,7 +65,16 @@ class WaveformLinear:
 class WaveformLong:
     def __init__(self, length_l):
         self.length_l = length_l
-        self.buf = tuple(int(-16 + 32 * (l / length_l)) for l in range(length_l))
+        self.buf = [0]*length_l
+        unten = -2.0
+        oben = 2.0
+        length = 50
+        C=1.0
+        A=1.0
+        f=3.0
+        for i in range(length_l):
+            x = unten + i * (oben-unten)/length_l
+            self.buf[i] = int(math.exp(-x**2)*math.cos(2.0*9.0*x) * 254.0)
 
     def waveform256(self, offset_l):
         return self.buf
