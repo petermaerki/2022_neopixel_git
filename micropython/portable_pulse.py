@@ -19,13 +19,13 @@ import portable_neopixel as neopixel
 DIMM_TIME_L = 40
 DIMM_TIME_FLOAT = float(DIMM_TIME_L)
 
-def calculate_waveform_point256(l, lenght):
-    phase = l / lenght * 2 * math.pi
+def calculate_waveform_point256(l, length):
+    phase = l / length * 2 * math.pi
     value256 = int(254.0 * (-math.cos(phase) * 0.5 + 0.5) ** 2) + 1
     assert 0 <= value256 < 256
     return value256
 
-def create_waveform256(lenght):
+def create_waveform256(length):
     """
     >>> create_waveform256(1)
     (255,)
@@ -40,16 +40,16 @@ def create_waveform256(lenght):
     (1, 2, 16, 64, 143, 222, 255, 222, 143, 64, 16, 2)
     """
     # wave_array is an array with integers to max 255/2, colors
-    if lenght == 1:
+    if length == 1:
         return (255,)
 
-    if lenght == 2:
+    if length == 2:
         return (255, 255)
 
-    if lenght == 3:
+    if length == 3:
         return (10, 255, 10)
 
-    return tuple(calculate_waveform_point256(l, lenght) for l in range(lenght))
+    return tuple(calculate_waveform_point256(l, length) for l in range(length))
 
 
 class Pulse:
