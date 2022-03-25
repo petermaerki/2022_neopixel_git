@@ -1,21 +1,20 @@
-import micropython
-
-micropython.alloc_emergency_exception_buf(100)
+import gc
 import time
 import random
 from pyb import Pin, ExtInt, Timer, LED
-
-
 import machine
+import micropython
 import portable_neopixel as neopixel
-
 from pulse_generator import PulseGenerator
+
+micropython.alloc_emergency_exception_buf(100)
 
 if False:
     import performance_test
 
     performance_test.test()
 
+b = bytearray(9 * 1024)
 
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
@@ -199,8 +198,12 @@ class ShowPulses:
             self._last_time_us = timer_us()
 
             print(
-                "%0.2f beats per second, led_current=%d"
-                % (1000000.0 * COUNTER_MAX / duration_ms, self.pulse_list.led_current())
+                "%0.2f beats per second, led_current=%d, mem_free=%d"
+                % (
+                    1000000.0 * COUNTER_MAX / duration_ms,
+                    self.pulse_list.led_current(),
+                    gc.mem_free(),
+                )
             )
             self.pulse_list.end_of_life()
             if self.pulse_list.is_empty():
@@ -220,7 +223,9 @@ class ShowPulses:
                     duration_ms, current_at_limit
                 )
             else:
-                pulse = self.pulse_generator.get_next_wave(super, current_at_limit)
+                pulse = self.pulse_generator.get_next_wave(
+                    duration_ms, current_at_limit
+                )
             # print("pulse", pulse._waveform256)
             self.pulse_list.append(pulse)
 

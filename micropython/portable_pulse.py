@@ -10,6 +10,15 @@ position_b: Position in beats.
 position_l: Position of a led
 position_lc: Position of a color within a led (G R B)
 
+Only positive values
+  3 * 512 Bytes = 1.5k Bytes
+
+Negative and positive values
+  3 * 512 Bytes = 1.5k Bytes
+  3 * 2 * 512 Bytes = 3k Bytes
+  Total 4.5k Bytes
+
+10 m: 9kBytes
 """
 
 import math
@@ -55,11 +64,6 @@ class WaveformLinear:
 
 class WaveformLong:
     def __init__(self, length_l):
-        # self.buf = bytearray(self.length_l)
-        # for l in range(length_l):
-        #     self.buf[l] = int(255*l/length_l)
-        # self.buf[0] = 127
-        # self.buf[1] = 127
         self.length_l = length_l
         self.buf = tuple(int(-16 + 32 * (l / length_l)) for l in range(length_l))
 
