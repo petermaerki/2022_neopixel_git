@@ -19,7 +19,7 @@ PREDEFINED_COLORS_RGB256 = [
     (255, 0, 127),  # komischpink
     (255, 255, 255),  # weiss
 ]
-PREDEFINED_LIFETIMES_L = [50, 100, 200, 600, 1500]
+PREDEFINED_LIFETIMES_L = [500, 800, 1200, 3000, 5000]
 
 
 def create_pulse_killer(np):
@@ -28,7 +28,7 @@ def create_pulse_killer(np):
         color_rgb256=(255, 0, 0),  # red
         waveform=WaveformPulse(3),
         speed_divider_bpl=1,  # 120,
-        lifetime_l=800,
+        lifetime_l=int(np.n * 1.3),
         killer=True,
     )
 
@@ -69,7 +69,7 @@ def create_predefined_pulses(np):
 class PulseGenerator:
     def __init__(self, np):
         self._np = np
-        self._waveform_long = WaveformLong(3*96)
+        self._waveform_long = WaveformLong(4*96)
         self.reset()
 
     def reset(self):
@@ -84,11 +84,11 @@ class PulseGenerator:
 
         # length_l = random.choice(PREDEFINED_LENGTHS_L)
         # speed_divider_bpl = random.choice(PREDEFINED_SPEED_DIVIDER_BPL)
-        length_l = max(1, duration_ms // 10)
+        length_l = max(2, duration_ms // 20)
         # duration_ms=10: speed_divider_bpl=1
         # duration_ms=2000: speed_divider_bpl=100
-        speed_divider_bpl = duration_ms // 40
-        speed_divider_bpl = min(20, max(1, speed_divider_bpl))
+        speed_divider_bpl = duration_ms // 20
+        speed_divider_bpl = min(15, max(1, speed_divider_bpl))
         print("length_l=%d, speed_divider_bpl=%d" % (length_l, speed_divider_bpl))
         return Pulse(
             strip_length_l=self._np.led_count,
@@ -99,10 +99,13 @@ class PulseGenerator:
         )
 
     def get_next_wave(self, duration_ms, current_at_limit):
+        if current_at_limit:
+            print("current_at_limit: send killer")
+            return create_pulse_killer(self._np)
         return Pulse(
             strip_length_l=self._np.led_count,
             waveform=self._waveform_long,
-            color_rgb256=(255, 127, 0), # random.choice(PREDEFINED_COLORS_RGB256),
+            color_rgb256= random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
             lifetime_l=3 * self._np.n,
         )

@@ -82,6 +82,36 @@ class WaveformLong:
         return self.buf
 
 
+# <<<<<<< HEAD
+# =======
+def create_waveform256(length):
+    """
+    >>> create_waveform256(1)
+    (255,)
+
+    >>> create_waveform256(2)
+    (255, 255)
+
+    >>> create_waveform256(3)
+    (10, 255, 10)
+
+    >>> create_waveform256(12)
+    (1, 2, 16, 64, 143, 222, 255, 222, 143, 64, 16, 2)
+    """
+    # wave_array is an array with integers to max 255/2, colors
+    if length == 1: # Peter: todo: nicht sichtbar
+        return (255,)
+
+    if length == 2:
+        return (255, 255)
+
+    if length == 3:
+        return (10, 255, 10)
+
+    return tuple(calculate_waveform_point256(l, length) for l in range(length))
+
+
+# >>>>>>> 9cef0a9 (zeitbasis und kleine optimierungen)
 class Pulse:
     """
     >>> strip_length_l = 20
