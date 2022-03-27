@@ -18,16 +18,16 @@ taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
 
 # print (wave_array)
-LED_CURRENT_MAX = 250  # vorsicht: stromverbrauch
-COUNTER_MAX = 100
+LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
+COUNTER_MAX = 50
 
-MIN_TIME_BEAT_US = 20000
+MIN_TIME_BEAT_MS = 20
 
 
 class Button:
     def __init__(self, pin):
         self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
-        self.ticks_us = None
+        self.ticks_ms = None
         self._button_pressed_ms = None
         ExtInt(
             self.pin,
@@ -47,63 +47,99 @@ class Button:
 
     def _callback_button(self, dummy):
         # self.timer.init(period=10, mode=machine.Timer.ONE_SHOT, callback=self.callback_timer)
-        ticks_us = timer_us()
+        ticks_ms = timer_ms.get()
         while True:
-            duration_us = timer_us() - ticks_us
-            if duration_us > 10000:
+            duration_ms = timer_ms.get() - ticks_ms
+            if duration_ms > 10:
                 break
         unpressed = self.pin.value()
         if unpressed:
-            if self.ticks_us is None:
+            if self.ticks_ms is None:
                 return
-            self._button_pressed_ms = (timer_us() - self.ticks_us) // 1000
-            self.ticks_us = None
+            self._button_pressed_ms = (timer_ms.get() - self.ticks_ms)
+            self.ticks_ms = None
             return
-        self.ticks_us = timer_us()
+        self.ticks_ms = timer_ms.get()
 
 
 button = Button("Y1")
 
 
 MODE_PULSES = 0
-MODE_WAVES = 1
+MODE_MONOCOLOR_WAVES = 1
+MODE_MULTICOLOR_WAVES = 2
+MODE_UNDEFINED_01 = 3
+MODE_UNDEFINED_02 = 4
+MODES = 4
 
+class timer_ms():
+    def __init__(self):
+        # The method `bitstream` disrupts the timer, therefore
+        # ticks_ms, ticks_cpu etc. would not work.
+        cpu_freq_Hz = 168000000
+        freq_timer_Hz = 2000
+        prescaler = int((cpu_freq_Hz / (2 * freq_timer_Hz)) - 1)
+        self.timer_ms = Timer(2, prescaler=prescaler, period=0x3FFFFFFF)
+        self.timer_ms.counter(0)
+    def get(self):
+        return self.timer_ms.counter() // 2
+    def check_overflow(self):
+        if self.timer_ms.counter() >= 2147483648: # 2**31
+            # Avoid timer overflow after about 12 days
+            print("machine.reset() to avoid timer overflow")
+            time.sleep(1.0)
+            machine.reset()
+
+timer_ms = timer_ms()
 
 class Mode:
     def __init__(self):
+        self.led_red = LED(1)
         self.led_green = LED(2)
-        self.mode = MODE_PULSES
-        self.toggle_mode()
+        self.led_yellow = LED(3)
+        self.led_blue = LED(4)
+        self.reset()
 
     def set(self, mode):
         self.mode = mode
-        if self.mode == MODE_WAVES:
+        self.led_red.off()
+        self.led_green.off()
+        self.led_yellow.off()
+        self.led_blue.off()
+        if self.mode == MODE_MONOCOLOR_WAVES:
             self.led_green.on()
-        else:
-            self.led_green.off()
+        if self.mode == MODE_MULTICOLOR_WAVES:
+            self.led_yellow.on()
+        if self.mode == MODE_UNDEFINED_01:
+            self.led_blue.on()
+        if self.mode == MODE_UNDEFINED_02:
+            self.led_red.on()
+        print("Mode: %s" % self.mode)
 
-    def toggle_mode(self):
-        if self.mode == MODE_WAVES:
-            self.set(MODE_PULSES)
-        else:
-            self.set(MODE_WAVES)
+    def next_mode(self):
+        self.set((self.mode + 1) % MODES)
 
+    def button_next_mode(self):
+        self.auto_mode_change = False
+        self.next_mode()
+
+    def check_auto_mode(self):
+        if self.auto_mode_change:
+            change_every_ms = 30000
+            if self.next_auto_mode_change_ms == None:
+                self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
+            if timer_ms.get() > self.next_auto_mode_change_ms:
+                self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
+                self.set((self.mode + 1) % MODES)
+                print(self.next_auto_mode_change_ms)
+
+    def reset(self):
+        self.set(MODE_PULSES)
+        self.next_auto_mode_change_ms = None
+        self.auto_mode_change = True
+        print("mode.reset() done")
 
 mode = Mode()
-
-
-def init_timer_us():
-    # The method `bitstream` disrupts the timer, therefore
-    # ticks_ms, ticks_cpu etc. would not work.
-    cpu_freq_Hz = 168000000
-    freq_timer_Hz = 1000000
-    prescaler = int((cpu_freq_Hz / (2 * freq_timer_Hz)) - 1)
-    timer_us = Timer(2, prescaler=prescaler, period=0x3FFFFFFF)
-    timer_us.counter(0)
-    return timer_us.counter
-
-
-timer_us = init_timer_us()
 
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
@@ -162,18 +198,18 @@ class ListPulses:
 
 class IdleTimeResetter:
     def __init__(self):
-        self._last_idle_ticks_us = None
+        self._last_idle_ticks_ms = None
 
     def time_over(self):
-        if self._last_idle_ticks_us is None:
-            self._last_idle_ticks_us = timer_us()
+        if self._last_idle_ticks_ms is None:
+            self._last_idle_ticks_ms = timer_ms.get()
             return False
 
-        idle_time_us = timer_us() - self._last_idle_ticks_us
-        if idle_time_us > 60 * 1000 * 1000:
-            self._last_idle_ticks_us = None
+        idle_time_ms = timer_ms.get() - self._last_idle_ticks_ms
+        if idle_time_ms > 60 * 1000:
+            self._last_idle_ticks_ms = None
             print("IdleTimeResetter: time_over")
-            mode.set(MODE_PULSES)
+            mode.reset()
             return True
         return False
 
@@ -185,20 +221,20 @@ class ShowPulses:
         self.pulse_generator = PulseGenerator(np=NP)
         self.idle_time_resetter = IdleTimeResetter()
         self._last_time_ms = time.ticks_ms()
-        self._last_time_us = timer_us()
+        self._last_time_ms = timer_ms.get()
         NP.write()
 
     def calculate_next_beat(self):
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
-            time_us = timer_us()
-            duration_ms = time_us - self._last_time_us
-            self._last_time_us = timer_us()
+            time_ms = timer_ms.get()
+            duration_ms = time_ms - self._last_time_ms
+            self._last_time_ms = timer_ms.get()
 
             print(
-                "%0.2f beats per second, led_current=%d, mem_free=%d"
+                "%0.0f beats per second, led_current=%d, mem_free=%d"
                 % (
-                    1000000.0 * COUNTER_MAX / duration_ms,
+                    1000.0 * COUNTER_MAX / duration_ms,
                     self.pulse_list.led_current(),
                     gc.mem_free(),
                 )
@@ -212,7 +248,7 @@ class ShowPulses:
         if duration_ms is not None:
             print("Button %d ms" % duration_ms)
             if duration_ms > 3000:
-                mode.toggle_mode()
+                mode.button_next_mode()
                 return
 
             current_at_limit = self.pulse_list.current_at_limit()
@@ -235,17 +271,17 @@ class ShowPulses:
 
     def run_forever(self):
         while True:
-            time_us = timer_us()
+            time_ms = timer_ms.get()
 
             self.calculate_next_beat()
 
-            slowdown_us = MIN_TIME_BEAT_US + time_us - timer_us()
-            if slowdown_us > 0:
-                # print("slowdown_us", slowdown_us)
-                time.sleep_us(slowdown_us)
-                if time_us >= 2147483648:  # 2**31
-                    # Reset timer after ~8 minutes
-                    timer_us(0)
+            slowdown_ms = MIN_TIME_BEAT_MS + time_ms - timer_ms.get()
+            if slowdown_ms > 0:
+                # print("slowdown_ms", slowdown_ms)
+                time.sleep_ms(slowdown_ms)
+                timer_ms.check_overflow()
+                if not self.pulse_list.is_empty():
+                    mode.check_auto_mode()
 
 
 show_dinger = ShowPulses()

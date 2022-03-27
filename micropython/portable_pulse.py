@@ -96,7 +96,7 @@ def create_waveform256(length):
     (1, 2, 16, 64, 143, 222, 255, 222, 143, 64, 16, 2)
     """
     # wave_array is an array with integers to max 255/2, colors
-    if length == 1:
+    if length == 1: # Peter: todo: nicht sichtbar
         return (255,)
 
     if length == 2:
