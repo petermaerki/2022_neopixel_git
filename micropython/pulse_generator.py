@@ -8,22 +8,23 @@ MIN_TIME_BEAT_MS = 20
 # PREDEFINED_SPEED_DIVIDER_BPL = [5, 10, 1, 5, 2, 1, 6, 3, 10]
 # PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
 PREDEFINED_COLORS_RGB256 = [
-    (255, 0, 0),  # red
     (255, 127, 0),  # orange
+    (0, 127, 255),  # komischblau
     (255, 255, 0),  # yellow
     (127, 255, 0),  # giftgruen
-    (0, 255, 0),  # gruen
-    (0, 255, 127),  # grausiggruen
+    (255, 0, 0),  # red
     (0, 255, 255),  # cyan
-    (0, 127, 255),  # komischblau
     (0, 0, 255),  # blau
+    (0, 255, 0),  # gruen
     (127, 0, 255),  # komischblau 2
     (255, 0, 255),  # magenta
-    (255, 0, 127),  # komischpink
+    (0, 255, 127),  # grausiggruen
     (255, 255, 255),  # weiss
+    (255, 0, 127),  # komischpink
+
 ]
 #PREDEFINED_LIFETIMES_L = [500, 800, 1200, 3000, 5000]
-PREDEFINED_LIFETIMES_S = [5, 10, 20, 30, 40, 50, 60]
+PREDEFINED_LIFETIMES_S = [5, 10, 20, 30, 40, 50, 60, 120]
 
 def create_pulse_killer(np):
     return Pulse(
@@ -50,7 +51,7 @@ def create_predefined_pulses(np):
             color_rgb256=(0, 0, 255),  # blau
             waveform=WaveformPulse(5),
             speed_divider_bpl=7,
-            lifetime_l=1500,
+            lifetime_l=800,
         ),
         Pulse(
             strip_length_l=np.n,
@@ -58,13 +59,6 @@ def create_predefined_pulses(np):
             waveform=WaveformPulse(3),
             speed_divider_bpl=2,
             lifetime_l=800,
-        ),
-        Pulse(
-            strip_length_l=np.n,
-            color_rgb256=(255, 255, 0),  # yellow
-            waveform=WaveformPulse(20),
-            speed_divider_bpl=6,
-            lifetime_l=1200,
         ),
     ]
 
