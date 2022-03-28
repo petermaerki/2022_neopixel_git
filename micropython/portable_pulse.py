@@ -69,7 +69,6 @@ class WaveformLong:
         buf = [0] * length_l
         unten = -2.0
         oben = 2.0
-        length = 50
         C = 1.0
         A = 1.0
         f = 3.0
