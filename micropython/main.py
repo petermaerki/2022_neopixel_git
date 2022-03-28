@@ -5,8 +5,8 @@ from pyb import Pin, ExtInt, Timer, LED
 import machine
 import micropython
 import portable_neopixel as neopixel
-from pulse_generator import PulseGenerator
 
+from pulse_generator import PulseGenerator, MIN_TIME_BEAT_MS
 micropython.alloc_emergency_exception_buf(100)
 
 if False:
@@ -20,9 +20,6 @@ taster_gnd.value(0)
 # print (wave_array)
 LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
 COUNTER_MAX = 50
-
-MIN_TIME_BEAT_MS = 20
-
 
 class Button:
     def __init__(self, pin):
@@ -70,7 +67,7 @@ MODE_MONOCOLOR_WAVES = 1
 MODE_MULTICOLOR_WAVES = 2
 MODE_UNDEFINED_01 = 3
 MODE_UNDEFINED_02 = 4
-MODES = 4
+MODES = 5
 
 class timer_ms():
     def __init__(self):
@@ -243,6 +240,8 @@ class ShowPulses:
             if self.pulse_list.is_empty():
                 if self.idle_time_resetter.time_over():
                     self.pulse_generator.reset()
+            else:
+                mode.check_auto_mode()
 
         duration_ms = button.get_button_pressed_ms()
         if duration_ms is not None:
@@ -256,8 +255,20 @@ class ShowPulses:
                 pulse = self.pulse_generator.get_next_pulse(
                     duration_ms, current_at_limit
                 )
-            else:
-                pulse = self.pulse_generator.get_next_wave(
+            if mode.mode == MODE_MONOCOLOR_WAVES:
+                pulse = self.pulse_generator.get_monocolor_wave(
+                    duration_ms, current_at_limit
+                )
+            if mode.mode == MODE_MULTICOLOR_WAVES:
+                pulse = self.pulse_generator.get_multicolor_wave(
+                    duration_ms, current_at_limit
+                )
+            if mode.mode == MODE_UNDEFINED_01:
+                pulse = self.pulse_generator.get_next_wave_01(
+                    duration_ms, current_at_limit
+                )
+            if mode.mode == MODE_UNDEFINED_02:
+                pulse = self.pulse_generator.get_next_wave_02(
                     duration_ms, current_at_limit
                 )
             # print("pulse", pulse._waveform256)
@@ -280,8 +291,7 @@ class ShowPulses:
                 # print("slowdown_ms", slowdown_ms)
                 time.sleep_ms(slowdown_ms)
                 timer_ms.check_overflow()
-                if not self.pulse_list.is_empty():
-                    mode.check_auto_mode()
+
 
 
 show_dinger = ShowPulses()
