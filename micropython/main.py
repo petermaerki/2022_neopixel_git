@@ -11,7 +11,8 @@ import ledstrip
 # =======
 # >>>>>>> c1474d0 (div)
 
-from pulse_generator import PulseGenerator, MIN_TIME_BEAT_MS
+from pulse_generator import PulseGenerator, MIN_TIME_BEAT_MS, PREDEFINED_COLORS_RGB256
+from portable_pulse import Pulse, WaveformPulse
 micropython.alloc_emergency_exception_buf(100)
 
 if False:
@@ -121,7 +122,7 @@ class Mode:
             self.led_blue.on()
         if self.mode == MODE_UNDEFINED_02:
             self.led_red.on()
-        print("Mode: %s" % self.mode)
+        #print("Mode: %s" % self.mode)
 
     def next_mode(self):
         self.set((self.mode + 1) % MODES)
@@ -138,7 +139,6 @@ class Mode:
             if timer_ms.get() > self.next_auto_mode_change_ms:
                 self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
                 self.set((self.mode + 1) % MODES)
-                print(self.next_auto_mode_change_ms)
 
     def reset(self):
         self.set(MODE_PULSES)
@@ -247,11 +247,13 @@ class ShowPulses:
             self._last_time_ms = timer_ms.get()
 
             print(
-                "%0.0f beats per second, led_current=%d, mem_free=%d"
+                "%0.0f bps, led_current=%d, mem_free=%d, mode=%d, pulses=%d"
                 % (
                     1000.0 * COUNTER_MAX / duration_ms,
                     self.pulse_list.led_current(),
                     gc.mem_free(),
+                    mode.mode,
+                    len(self.pulse_list.pulse_list)
                 )
             )
             self.pulse_list.end_of_life()
@@ -269,6 +271,7 @@ class ShowPulses:
                 return
 
             current_at_limit = self.pulse_list.current_at_limit()
+            pulse = None
             if mode.mode == MODE_PULSES:
                 pulse = self.pulse_generator.get_next_pulse(
                     duration_ms, current_at_limit
@@ -285,12 +288,28 @@ class ShowPulses:
                 pulse = self.pulse_generator.get_next_wave_01(
                     duration_ms, current_at_limit
                 )
+
+            if pulse is not None:
+                self.pulse_list.append(pulse)
+
             if mode.mode == MODE_UNDEFINED_02:
-                pulse = self.pulse_generator.get_next_wave_02(
-                    duration_ms, current_at_limit
-                )
-            # print("pulse", pulse._waveform256)
-            self.pulse_list.append(pulse)
+                colors = random.randrange(3,6)
+                index = random.randrange(len(PREDEFINED_COLORS_RGB256)-3)
+                colorlist = PREDEFINED_COLORS_RGB256[index:index+colors]
+                print(colorlist)
+                offset = 0
+                for color in colorlist:
+                    pulse = Pulse(
+                        strip_length_l=NP.n,
+                        color_rgb256=color,
+                        waveform=WaveformPulse(7),
+                        speed_divider_bpl=2,  # 120,
+                        lifetime_l=int(NP.n * 1.3),
+                        killer=False,
+                    )
+                    pulse.change_startposition(-offset*9)
+                    self.pulse_list.append(pulse)
+                    offset += 1
 
         if AUTO_ON:
             if random.random() < 0.0001:
