@@ -20,7 +20,7 @@ taster_gnd.value(0)
 
 # print (wave_array)
 LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
-COUNTER_MAX = 50
+COUNTER_MAX = 100
 
 class Button:
     def __init__(self, pin):
@@ -123,7 +123,7 @@ class Mode:
 
     def check_auto_mode(self):
         if self.auto_mode_change:
-            change_every_ms = 30000
+            change_every_ms = 40000
             if self.next_auto_mode_change_ms == None:
                 self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
             if timer_ms.get() > self.next_auto_mode_change_ms:
@@ -278,7 +278,7 @@ class ShowPulses:
                 colors = random.randrange(3,6)
                 index = random.randrange(len(PREDEFINED_COLORS_RGB256)-3)
                 colorlist = PREDEFINED_COLORS_RGB256[index:index+colors]
-                print(colorlist)
+                #print(colorlist)
                 offset = 0
                 for color in colorlist:
                     pulse = Pulse(
@@ -289,7 +289,7 @@ class ShowPulses:
                         lifetime_l=int(NP.n * 1.3),
                         killer=False,
                     )
-                    pulse.change_startposition(-offset*9)
+                    pulse.change_startposition_l(-offset*9)
                     self.pulse_list.append(pulse)
                     offset += 1
 
