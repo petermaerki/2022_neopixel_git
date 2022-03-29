@@ -206,8 +206,8 @@ class Pulse:
                 print("hit")
                 pulse.strike()
 
-    def change_startposition(self, add_b):
-        self._position_b += add_b
+    def change_startposition_l(self, add_b):
+        self._position_b += add_b * self._speed_divider_bpl
 
     def do_increment(self):
         if self._blink or self._killer:

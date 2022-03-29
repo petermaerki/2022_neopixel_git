@@ -24,7 +24,7 @@ PREDEFINED_COLORS_RGB256 = [
 
 ]
 #PREDEFINED_LIFETIMES_L = [500, 800, 1200, 3000, 5000]
-PREDEFINED_LIFETIMES_S = [5, 10, 20, 30, 40, 50, 60, 120]
+PREDEFINED_LIFETIMES_S = [5, 10, 20, 30, 40, 50, 60, 120, 180, 240, 300]
 
 def create_pulse_killer(np):
     return Pulse(
@@ -39,6 +39,7 @@ def create_pulse_killer(np):
 
 def create_predefined_pulses(np):
     return [
+# <<<<<<< HEAD
         Pulse(
             strip_length_l=np.led_count,
             color_rgb256=(0, 255, 0),  # gruen
@@ -70,6 +71,29 @@ def create_predefined_pulses(np):
         ),
 # =======
 # >>>>>>> d3eb5fa (.)
+# =======
+        # Pulse(
+        #     strip_length_l=np.n,
+        #     color_rgb256=(0, 255, 0),  # gruen
+        #     waveform=WaveformPulse(10),
+        #     speed_divider_bpl=3,
+        #     lifetime_l=400,
+        # ),
+        # Pulse(
+        #     strip_length_l=np.n,
+        #     color_rgb256=(0, 0, 255),  # blau
+        #     waveform=WaveformPulse(5),
+        #     speed_divider_bpl=7,
+        #     lifetime_l=800,
+        # ),
+        # Pulse(
+        #     strip_length_l=np.n,
+        #     color_rgb256=(255, 0, 0),  # red
+        #     waveform=WaveformPulse(3),
+        #     speed_divider_bpl=2,
+        #     lifetime_l=800,
+        # ),
+# >>>>>>> 63a3556 (.)
     ]
 
 
@@ -100,16 +124,23 @@ class PulseGenerator:
         speed_divider_bpl = min(15, max(1, speed_divider_bpl))
         print("length_l=%d, speed_divider_bpl=%d" % (length_l, speed_divider_bpl))
         lifetime_s = random.choice(PREDEFINED_LIFETIMES_S)
-        lifetime_l = int(lifetime_s * MIN_TIME_BEAT_MS / speed_divider_bpl) + DIMM_TIME_L
+        lifetime_l = int(lifetime_s * 1000 / (MIN_TIME_BEAT_MS * speed_divider_bpl)) + DIMM_TIME_L
         print("Lifetime %d s, %d l" % (lifetime_s, lifetime_l))
+# <<<<<<< HEAD
         return Pulse(
             strip_length_l=self._np.led_count,
+# =======
+        pulse = Pulse(
+            strip_length_l=self._np.n,
+# >>>>>>> 63a3556 (.)
             waveform=WaveformPulse(length_l),
             color_rgb256=random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=speed_divider_bpl,
             #lifetime_l=random.choice(PREDEFINED_LIFETIMES_L) + DIMM_TIME_L,
             lifetime_l=lifetime_l,
         )
+        pulse.change_startposition_l(int(length_l*0.1))
+        return(pulse)
 
     def get_monocolor_wave(self, duration_ms, current_at_limit):
         if current_at_limit:
@@ -137,7 +168,7 @@ class PulseGenerator:
 # >>>>>>> c1474d0 (div)
             color_rgb256= random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
-            lifetime_l=3 * self._np.n,
+            lifetime_l=5 * self._np.n,
         )
 
     def get_next_wave_01(self, duration_ms, current_at_limit):
@@ -149,7 +180,7 @@ class PulseGenerator:
             waveform=self._waveform_long_02,
             color_rgb256= random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
-            lifetime_l=3 * self._np.n,
+            lifetime_l=5 * self._np.n,
         )
 
     def get_next_wave_02(self, duration_ms, current_at_limit):
@@ -161,5 +192,5 @@ class PulseGenerator:
             waveform=self._waveform_long_03,
             color_rgb256= random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
-            lifetime_l=3 * self._np.n,
+            lifetime_l=5 * self._np.n,
         )
