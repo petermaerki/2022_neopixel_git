@@ -201,9 +201,13 @@ LEDSTRIP.clear()
 if setup == 'standard_5_x_96':
     NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 if setup == 'hombi_eg':
+# <<<<<<< HEAD
     #NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
     NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= 484)
 # >>>>>>> e8180b2 (.)
+# =======
+    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
+# >>>>>>> c63f60c (.)
 
 
 class ListPulses:
