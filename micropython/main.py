@@ -20,14 +20,17 @@ if False:
 
     performance_test.test()
 
+
+
+setup = 'hombi_eg'
+#setup = 'standard_5_x_96'
+
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
 taster_tpp223 = Pin("Y3", Pin.OUT)
 taster_tpp223.value(1) # supply of TPP223, after powerup TPP performs an autoadjustment of parasitic capacitance. Lets power up periodically.
 
 TPP_RESTART_EVERY_MS = 600 * 1000
-
-# radar_pin = Pin("Y7", Pin.IN)
 
 # print (wave_array)
 LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
@@ -77,6 +80,33 @@ class Button:
 
 
 button = Button("Y1")
+
+class Radar:
+    def __init__(self, pin):
+        self._radar_detected = False
+        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
+        ExtInt(
+            self.pin,
+            ExtInt.IRQ_RISING,
+            Pin.PULL_UP,
+            callback=self._callback_radar,
+        )
+
+    def _callback_radar(self, dummy):
+        print('Doppler radar signal detected')
+        self._radar_detected = True
+
+    def get_radar_detected(self):
+        """
+        return False: If radar not detected
+        return True: If radar detected
+        """
+        detected = self._radar_detected
+        self._radar_detected = False
+        return detected
+
+radar = Radar("Y7")
+
 
 
 MODE_PULSES = 0
@@ -161,11 +191,19 @@ mode = Mode()
 
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
+# <<<<<<< HEAD
 
 led_count = 5 * 96
 NEOPIXEL = neopixel.NeoPixel(pin=machine.Pin.board.Y12, led_count=led_count)
 LEDSTRIP = ledstrip.Ledstrip(led_count)
 LEDSTRIP.clear()
+# =======
+if setup == 'standard_5_x_96':
+    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
+if setup == 'hombi_eg':
+    #NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
+    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= 484)
+# >>>>>>> e8180b2 (.)
 
 
 class ListPulses:
@@ -287,13 +325,12 @@ class ShowPulses:
                 mode.check_auto_mode()
 
         duration_ms = button.get_button_pressed_ms()
+        current_at_limit = self.pulse_list.current_at_limit()
         if duration_ms is not None:
             print("Button %d ms" % duration_ms)
             if duration_ms > 3000:
                 mode.button_next_mode()
                 return
-
-            current_at_limit = self.pulse_list.current_at_limit()
             pulse = None
             if mode.mode == MODE_PULSES:
                 pulse = self.pulse_generator.get_next_pulse(
@@ -336,7 +373,12 @@ class ShowPulses:
 
         if AUTO_ON:
             if random.random() < 0.0001:
-                self.pulse_list.append(create_random_pulse())
+                pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
+                self.pulse_list.append(pulse)
+
+        if radar.get_radar_detected() and self.pulse_list.is_empty():
+            pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
+            self.pulse_list.append(pulse)
 
         self.pulse_list.show()
 
