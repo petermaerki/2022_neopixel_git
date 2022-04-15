@@ -3,7 +3,7 @@ import random
 
 
 
-MIN_TIME_BEAT_MS = 20
+MIN_TIME_BEAT_MS = 40
 
 # PREDEFINED_SPEED_DIVIDER_BPL = [5, 10, 1, 5, 2, 1, 6, 3, 10]
 # PREDEFINED_LENGTHS_L = [50, 30, 20, 10, 5, 2]
@@ -101,6 +101,23 @@ class PulseGenerator:
             lifetime_l=lifetime_l,
         )
         pulse.change_startposition_l(int(length_l*0.1))
+        return(pulse)
+
+    def get_radar_pulse(self, duration_ms, current_at_limit):
+        length_l = 3
+        speed_divider_bpl = random.randrange(1, 3)
+        lifetime_s = random.randrange(10, 25)
+        lifetime_l = int(lifetime_s * 1000 / (MIN_TIME_BEAT_MS * speed_divider_bpl)) + DIMM_TIME_L
+        startposition_l = random.randrange(1, self._np.n//3)
+        print("Radar pulse: length_l=%d, speed_divider_bpl=%d, lifetime_l=%d, startposition_l=%d" % (length_l, speed_divider_bpl, lifetime_l, startposition_l))
+        pulse = Pulse(
+            strip_length_l=self._np.n,
+            waveform=WaveformPulse(length_l),
+            color_rgb256=(0, 255, 0),
+            speed_divider_bpl=speed_divider_bpl,
+            lifetime_l=lifetime_l,
+        )
+        pulse.change_startposition_l(startposition_l)
         return(pulse)
 
     def get_monocolor_wave(self, duration_ms, current_at_limit):
