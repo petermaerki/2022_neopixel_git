@@ -17,16 +17,24 @@ if False:
 
 taster_gnd = Pin("Y2", Pin.OUT)
 taster_gnd.value(0)
+taster_tpp223 = Pin("Y3", Pin.OUT)
+taster_tpp223.value(1) # supply of TPP223, after powerup TPP performs an autoadjustment of parasitic capacitance. Lets power up periodically.
+
+TPP_RESTART_EVERY_MS = 600 * 1000
+
+# radar_pin = Pin("Y7", Pin.IN)
 
 # print (wave_array)
 LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
 COUNTER_MAX = 100
 
+BUTTON_TYPE = 'TPP223' # or 'switch_Y1_Y2'
+ignor_button = False
 class Button:
     def __init__(self, pin):
-        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
         self.ticks_ms = None
         self._button_pressed_ms = None
+        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
         ExtInt(
             self.pin,
             ExtInt.IRQ_RISING_FALLING,
@@ -44,7 +52,10 @@ class Button:
         return duration_ms
 
     def _callback_button(self, dummy):
+        global ignor_button
         # self.timer.init(period=10, mode=machine.Timer.ONE_SHOT, callback=self.callback_timer)
+        if ignor_button:
+            return
         ticks_ms = timer_ms.get()
         while True:
             duration_ms = timer_ms.get() - ticks_ms
@@ -196,8 +207,20 @@ class ListPulses:
 class IdleTimeResetter:
     def __init__(self):
         self._last_idle_ticks_ms = None
+        self._last_tpp_reset_ms = 0
 
     def time_over(self):
+        global ignor_button
+        if timer_ms.get() > self._last_tpp_reset_ms:
+            ignor_button = True
+            taster_tpp223.value(0) # supply of TPP223, after powerup TPP performs an autoadjustment of parasitic capacitance. Lets power up periodically.
+            time.sleep(1.0)
+            print("TPP223 restart power to calibrate parasitic capacitance")
+            taster_tpp223.value(1)
+            time.sleep(0.5)
+            ignor_button = False
+            self._last_tpp_reset_ms += TPP_RESTART_EVERY_MS
+
         if self._last_idle_ticks_ms is None:
             self._last_idle_ticks_ms = timer_ms.get()
             return False
