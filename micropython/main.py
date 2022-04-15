@@ -184,8 +184,7 @@ AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 if setup == 'standard_5_x_96':
     NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
 if setup == 'hombi_eg':
-    #NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
-    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= 484)
+    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
 
 
 class ListPulses:
