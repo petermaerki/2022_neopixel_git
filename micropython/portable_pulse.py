@@ -19,6 +19,9 @@ Negative and positive values
   Total 4.5k Bytes
 
 10 m: 9kBytes
+
+led_count: For example 5m * 96led/m: led_count=480
+led3_count: one led is represented by 3 led3: led3_count=3*led_count
 """
 
 import math

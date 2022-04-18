@@ -91,7 +91,7 @@ class PulseGenerator:
         speed_divider_bpl = min(20, max(1, speed_divider_bpl))
         print("length_l=%d, speed_divider_bpl=%d" % (length_l, speed_divider_bpl))
         return Pulse(
-            strip_length_l=self._np.n,
+            strip_length_l=self._np.led_count,
             waveform=WaveformPulse(length_l),
             color_rgb256=random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=speed_divider_bpl,
@@ -100,7 +100,7 @@ class PulseGenerator:
 
     def get_next_wave(self, duration_ms, current_at_limit):
         return Pulse(
-            strip_length_l=self._np.n,
+            strip_length_l=self._np.led_count,
             waveform=self._waveform_long,
             color_rgb256=(255, 127, 0), # random.choice(PREDEFINED_COLORS_RGB256),
             speed_divider_bpl=1,
