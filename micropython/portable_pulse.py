@@ -23,8 +23,6 @@ Negative and positive values
 
 import math
 
-import portable_neopixel as neopixel
-
 DIMM_TIME_L = 40
 DIMM_TIME_FLOAT = float(DIMM_TIME_L)
 
@@ -81,37 +79,11 @@ class WaveformLong:
         return self.buf
 
 
-def create_waveform256(length):
-    """
-    >>> create_waveform256(1)
-    (255,)
-
-    >>> create_waveform256(2)
-    (255, 255)
-
-    >>> create_waveform256(3)
-    (10, 255, 10)
-
-    >>> create_waveform256(12)
-    (1, 2, 16, 64, 143, 222, 255, 222, 143, 64, 16, 2)
-    """
-    # wave_array is an array with integers to max 255/2, colors
-    if length == 1:
-        return (255,)
-
-    if length == 2:
-        return (255, 255)
-
-    if length == 3:
-        return (10, 255, 10)
-
-    return tuple(calculate_waveform_point256(l, length) for l in range(length))
-
-
 class Pulse:
     """
-    >>> np = neopixel.NeoPixel(None, 20)
-    >>> p = Pulse(strip_length_l=np.n, color_rgb256=(0,255,0), length_l=4, speed_divider_bpl=3, lifetime_l=30, blink=False)
+    >>> strip_length_l = 20
+    >>> waveform = WaveformPulse(length_l=4)
+    >>> p = Pulse(strip_length_l=strip_length_l, color_rgb256=(0,255,0), waveform=waveform, speed_divider_bpl=3, lifetime_l=30, blink=False)
 
     >>> p._position_b = 6
     >>> p.show(np)
@@ -131,8 +103,9 @@ class Pulse:
     0:(0, 220, 0)
     1:(0, 15, 0)
 
-    >>> np = neopixel.NeoPixel(None, 200)
-    >>> p = Pulse(strip_length_l=np.n, color_rgb256=(127, 0, 0), length_l=10, speed_divider_bpl=3, lifetime_l=42, blink=False)
+    >>> strip_length_l = 200
+    >>> waveform = WaveformPulse(length_l=10)
+    >>> p = Pulse(strip_length_l=strip_length_l, color_rgb256=(127, 0, 0), waveform=waveform, speed_divider_bpl=3, lifetime_l=42, blink=False)
     >>> p._position_b = 46
     >>> p._lifetime_b = -56
     >>> p.show(np)
@@ -230,7 +203,7 @@ class Pulse:
         if self._lifetime_b > 0:
             self._lifetime_b = 0
 
-    def show(self, np):
+    def show(self, np, ledstrip):
         if not self._on:
             return
 
@@ -245,11 +218,10 @@ class Pulse:
         lifetime_factor256 = max(0, lifetime_factor256)
         lifetime_factor256 = min(255, lifetime_factor256)
 
-        if neopixel.LIB_LEDSTRIPE:
+        if True:
             # assert isinstance(self._color_rgb256, tuple)
             # assert isinstance(lifetime_factor256, int)
-            neopixel.ledstrip.int_pulse(
-                np.buf,
+            ledstrip.pulse(
                 first_led_relative_l,
                 lifetime_factor256,
                 self._color_rgb256,
@@ -278,10 +250,12 @@ class Pulse:
 
 
 if __name__ == "__main__":
+    waveform = WaveformPulse(length_l=10)
+
     Pulse(
         strip_length_l=200,
         color_rgb256=(0, 255, 0),  # gruen
-        length_l=10,
+        waveform=waveform,
         speed_divider_bpl=5,
         lifetime_l=1000,
         blink=False,

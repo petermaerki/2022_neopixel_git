@@ -6,6 +6,7 @@ import machine
 import micropython
 import portable_neopixel as neopixel
 from pulse_generator import PulseGenerator
+import ledstrip
 
 micropython.alloc_emergency_exception_buf(100)
 
@@ -72,7 +73,7 @@ MODE_WAVES = 1
 class Mode:
     def __init__(self):
         self.led_green = LED(2)
-        self.mode = MODE_PULSES
+        self.mode = MODE_WAVES
         self.toggle_mode()
 
     def set(self, mode):
@@ -108,7 +109,10 @@ timer_us = init_timer_us()
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
 
-NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
+led_count = 5 * 96
+NEOPIXEL = neopixel.NeoPixel(pin=machine.Pin.board.Y12, led_count=led_count)
+LEDSTRIP = ledstrip.Ledstrip(led_count)
+LEDSTRIP.clear()
 
 
 class ListPulses:
@@ -146,15 +150,15 @@ class ListPulses:
         while purge_one_pulse():
             pass
 
-    def show(self, np):
+    def show(self):
         if len(self.pulse_list) == 0:
             return
 
-        np.clear(0)
+        LEDSTRIP.clear()
         for pulse in self.pulse_list:
-            pulse.show(np)
+            pulse.show(np=NEOPIXEL, ledstrip=LEDSTRIP)
             pulse.interact(self.pulse_list)
-        np.write()
+        NEOPIXEL.write(ledstrip=LEDSTRIP)
 
         for pulse in self.pulse_list:
             pulse.do_increment()
@@ -182,11 +186,11 @@ class ShowPulses:
     def __init__(self):
         self.fade_out_trigger = 0
         self.pulse_list = ListPulses()
-        self.pulse_generator = PulseGenerator(np=NP)
+        self.pulse_generator = PulseGenerator(np=NEOPIXEL)
         self.idle_time_resetter = IdleTimeResetter()
         self._last_time_ms = time.ticks_ms()
         self._last_time_us = timer_us()
-        NP.write()
+        NEOPIXEL.write(ledstrip=LEDSTRIP)
 
     def calculate_next_beat(self):
         self.fade_out_trigger += 1
@@ -231,7 +235,7 @@ class ShowPulses:
             if random.random() < 0.0001:
                 self.pulse_list.append(create_random_pulse())
 
-        self.pulse_list.show(NP)
+        self.pulse_list.show()
 
     def run_forever(self):
         while True:

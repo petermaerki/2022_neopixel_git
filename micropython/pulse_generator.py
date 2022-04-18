@@ -36,28 +36,28 @@ def create_pulse_killer(np):
 def create_predefined_pulses(np):
     return [
         Pulse(
-            strip_length_l=np.n,
+            strip_length_l=np.led_count,
             color_rgb256=(0, 255, 0),  # gruen
             waveform=WaveformPulse(10),
             speed_divider_bpl=3,
             lifetime_l=400,
         ),
         Pulse(
-            strip_length_l=np.n,
+            strip_length_l=np.led_count,
             color_rgb256=(0, 0, 255),  # blau
             waveform=WaveformPulse(5),
             speed_divider_bpl=7,
             lifetime_l=1500,
         ),
         Pulse(
-            strip_length_l=np.n,
+            strip_length_l=np.led_count,
             color_rgb256=(255, 0, 0),  # red
             waveform=WaveformPulse(3),
             speed_divider_bpl=2,
             lifetime_l=800,
         ),
         Pulse(
-            strip_length_l=np.n,
+            strip_length_l=np.led_count,
             color_rgb256=(255, 255, 0),  # yellow
             waveform=WaveformPulse(20),
             speed_divider_bpl=6,
