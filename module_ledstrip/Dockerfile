@@ -10,4 +10,4 @@ RUN pip3 install --no-cache pyelftools
 
 RUN apt-get install -y cmake
 
-WORKDIR /module_ledstrip
+WORKDIR /2022_neopixel_git/module_ledstrip/

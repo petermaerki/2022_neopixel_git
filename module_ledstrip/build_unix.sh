@@ -1,16 +1,18 @@
-
 set -euox pipefail
 
-cd /module_ledstrip/micropython/ports/unix && make submodules
-cd /module_ledstrip/micropython/mpy-cross && make
-cd /module_ledstrip/micropython/ports/unix && make
+SYSNAME=unix
 
-echo "See: ports/unix/module_ledstrip/micropython"
+cd /2022_neopixel_git/module_ledstrip/micropython/ports/unix && make submodules
+cd /2022_neopixel_git/module_ledstrip/micropython/mpy-cross && make
+cd /2022_neopixel_git/module_ledstrip/micropython/ports/unix && make
 
-# cd /module_ledstrip/micropython/examples/natmod/features0 && make clean && make
-# cp /module_ledstrip/micropython/examples/natmod/features0/features0.mpy .
+echo "See: ports/unix/2022_neopixel_git/module_ledstrip/micropython"
 
-cd /module_ledstrip/src && make clean && make
+# cd /2022_neopixel_git/module_ledstrip/micropython/examples/natmod/features0 && make clean && make
+# cp /2022_neopixel_git/module_ledstrip/micropython/examples/natmod/features0/features0.mpy .
+
+cd /2022_neopixel_git/module_ledstrip/src && make clean && make
 rm -rf build *.mpy
-make
-/module_ledstrip/micropython/ports/unix/micropython test_ledstrip.py
+make ARCH=x64
+cp /2022_neopixel_git/module_ledstrip/src/ledstrip.mpy /2022_neopixel_git/micropython/ledstrip_${SYSNAME}.mpy
+/2022_neopixel_git/module_ledstrip/micropython/ports/unix/micropython test_ledstrip.py

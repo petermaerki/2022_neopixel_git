@@ -9,20 +9,24 @@ This Docker image will compile `module_ledstrip`.
 Start container:
 
 ```
-cd module_ledstrip
+cd 2022_neopixel_git
 
 git clone --depth 1 --branch v1.18 --single-branch https://github.com/micropython/micropython.git
 
-docker build --tag micropython .
+docker build --tag micropython module_ledstrip
 
-docker run -it --rm --user=`id -u`:`id -g` -v `pwd`:/module_ledstrip --name micropython micropython bash
+docker run -it --rm --user=`id -u`:`id -g` -v `pwd`:/2022_neopixel_git --name micropython micropython bash
 ```
 
 On docker prompt: Build firmware
 
 ```
-./build_pyboard.sh
+rm /2022_neopixel_git/micropython/*.mpy
+
 ./build_unix.sh
+
+./build_pyboard.sh
+
 ./build_rp2.sh
 ```
 
