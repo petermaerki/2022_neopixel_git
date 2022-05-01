@@ -30,6 +30,12 @@ rm /2022_neopixel_git/micropython/*.mpy
 ./build_rp2.sh
 ```
 
+## Fix for rp2
+
+`module_ledstrip/micropython/py/dynruntime.mk`:
+
+Replace `CFLAGS += -mthumb -mcpu=cortex-m3` -> `CFLAGS += -mthumb -mcpu=cortex-m0`
+
 ## How to build `ledstrip.mpy` for the pyboard
 
 On docker prompt

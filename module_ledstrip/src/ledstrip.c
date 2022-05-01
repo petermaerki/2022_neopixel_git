@@ -148,7 +148,16 @@ STATIC mp_obj_t ledstrip_copy(mp_obj_t self_in, mp_obj_t obj_bytearray)
                 {
                     // mp_printf(&mp_plat_print, "negative %d %d %d->%d\n", c, led3s[i + c], i + c, i + ((c + 1) % COLORS));
                     negative_numbers++;
-                    self->led3s[i + ((c + 1) % COLORS)] += value256;
+                    // on rp2, '%' results in this error:
+                    // LinkError: build/ledstrip.o: undefined symbol: __aeabi_uidivmod
+                    // self->led3s[i + ((c + 1) % COLORS)] += value256;
+
+                    int c_plus = c+1;
+                    if (c_plus == COLORS)
+                    {
+                        c_plus = 0;
+                    }
+                    self->led3s[i + c_plus] += value256;
                     self->led3s[i + c] = 0;
                 }
             }
@@ -203,7 +212,6 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
     ledstrip_type.locals_dict = (void *)&re_locals_dict;
 
     mp_store_global(MP_QSTR_Ledstrip, MP_OBJ_FROM_PTR(&ledstrip_init_obj));
-
     // This must be last, it restores the globals dict
     MP_DYNRUNTIME_INIT_EXIT
 }
