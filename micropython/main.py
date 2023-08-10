@@ -1,3 +1,6 @@
+# pyboard 1.1, pybv11-20220117-v1.18.dfu (others do not work!)
+
+
 import gc
 import time
 import random

@@ -1,0 +1,12 @@
+pyboard v1.1
+
+must have: pybv11-20220117-v1.18.dfu (others do not work!)
+
+
+Switch between Y1 and Y2, normally open
+
+Neopixel Signal Y12, level shifter to 5V, to neopixel. MC74VHC1GT50x for example.
+
+Remove diode (see 20220414_221824_schematic.jpg) to get more voltage. 
+If you have many LED's, supply 5V direct to the stripes.
+
