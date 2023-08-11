@@ -27,7 +27,7 @@ typedef struct _mp_obj_ledstrip_t
     int16_t led3s[];
 } mp_obj_ledstrip_t;
 
-mp_obj_type_t ledstrip_type;
+mp_obj_full_type_t ledstrip_type;
 
 STATIC mp_obj_t ledstrip_init(mp_obj_t value_led_count)
 {
@@ -35,7 +35,7 @@ STATIC mp_obj_t ledstrip_init(mp_obj_t value_led_count)
     // mp_printf(&mp_plat_print, "led3_count=%d\n", led3_count);
 
     mp_obj_ledstrip_t *o = m_new_obj_var(mp_obj_ledstrip_t, int16_t, COLORS * led_count);
-    o->base.type = &ledstrip_type;
+    o->base.type = (mp_obj_type_t *)&ledstrip_type;
     o->led_count = led_count;
     return MP_OBJ_FROM_PTR(o);
 }
@@ -185,8 +185,8 @@ STATIC mp_obj_t ledstrip_led_count(mp_obj_t self_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ledstrip_led_count_obj, ledstrip_led_count);
 
-mp_map_elem_t re_locals_dict_table[4];
-STATIC MP_DEFINE_CONST_DICT(re_locals_dict, re_locals_dict_table);
+mp_map_elem_t ledstrip_locals_dict_table[4];
+STATIC MP_DEFINE_CONST_DICT(re_locals_dict, ledstrip_locals_dict_table);
 
 STATIC void re_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
 {
@@ -196,7 +196,7 @@ STATIC void re_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t 
     mp_printf(print, "led_count=%d", self->led_count);
 }
 
-// This is the entry point and is called when the module is imported
+// This is the entrv1.20.0y point and is called when the module is imported
 mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *args)
 {
     // This must be first, it sets up the globals dict and other things
@@ -204,14 +204,16 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
 
     ledstrip_type.base.type = (void *)&mp_fun_table.type_type;
     ledstrip_type.name = MP_QSTR_Ledstrip;
-    ledstrip_type.print = re_print;
-    re_locals_dict_table[0] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_clear), MP_OBJ_FROM_PTR(&ledstrip_clear_obj)};
-    re_locals_dict_table[1] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_pulse), MP_OBJ_FROM_PTR(&ledstrip_pulse_obj)};
-    re_locals_dict_table[2] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_copy), MP_OBJ_FROM_PTR(&ledstrip_copy_obj)};
-    re_locals_dict_table[3] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_led_count), MP_OBJ_FROM_PTR(&ledstrip_led_count_obj)};
-    ledstrip_type.locals_dict = (void *)&re_locals_dict;
+    MP_OBJ_TYPE_SET_SLOT(&ledstrip_type, print, re_print, 0);
+    ledstrip_locals_dict_table[0] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_clear), MP_OBJ_FROM_PTR(&ledstrip_clear_obj)};
+    ledstrip_locals_dict_table[1] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_pulse), MP_OBJ_FROM_PTR(&ledstrip_pulse_obj)};
+    ledstrip_locals_dict_table[2] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_copy), MP_OBJ_FROM_PTR(&ledstrip_copy_obj)};
+    ledstrip_locals_dict_table[3] = (mp_map_elem_t){MP_OBJ_NEW_QSTR(MP_QSTR_led_count), MP_OBJ_FROM_PTR(&ledstrip_led_count_obj)};
+    MP_OBJ_TYPE_SET_SLOT(&ledstrip_type, locals_dict, (void*)&re_locals_dict, 1);
 
     mp_store_global(MP_QSTR_Ledstrip, MP_OBJ_FROM_PTR(&ledstrip_init_obj));
     // This must be last, it restores the globals dict
     MP_DYNRUNTIME_INIT_EXIT
 }
+
+

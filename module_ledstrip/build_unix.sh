@@ -15,4 +15,4 @@ cd /2022_neopixel_git/module_ledstrip/src && make clean && make
 rm -rf build *.mpy
 make ARCH=x64
 cp /2022_neopixel_git/module_ledstrip/src/ledstrip.mpy /2022_neopixel_git/micropython/ledstrip_${SYSNAME}.mpy
-/2022_neopixel_git/module_ledstrip/micropython/ports/unix/micropython test_ledstrip.py
+/2022_neopixel_git/module_ledstrip/micropython/ports/unix/build-standard/micropython test_ledstrip.py
