@@ -1,21 +1,27 @@
-# pyboard 1.1, pybv11-20220117-v1.18.dfu (others do not work!)
-
-
+import os
 import gc
 import time
 import random
-from pyb import Pin, ExtInt, Timer, LED
 import machine
 import micropython
-import portable_neopixel as neopixel
+# import portable_neopixel as neopixel
 # <<<<<<< HEAD
 from pulse_generator import PulseGenerator
-import ledstrip
 # =======
 # >>>>>>> c1474d0 (div)
 
 from pulse_generator import PulseGenerator, MIN_TIME_BEAT_MS, PREDEFINED_COLORS_RGB256
-from portable_pulse import Pulse, WaveformPulse
+
+import ledstrip_rp2 as ledstrip
+import rp2_ws2821 as neopixel
+PIN_BUTTON = machine.Pin(27)
+PIN_LED = machine.Pin(28)
+class LED:
+    def __init__(self, dummy): pass
+    def on(self): pass
+    def off(self): pass
+
+
 micropython.alloc_emergency_exception_buf(100)
 
 if False:
@@ -24,193 +30,95 @@ if False:
     performance_test.test()
 
 
-
-setup = 'hombi_eg'
-#setup = 'standard_5_x_96'
-
-taster_gnd = Pin("Y2", Pin.OUT)
-taster_gnd.value(0)
-taster_tpp223 = Pin("Y3", Pin.OUT)
-taster_tpp223.value(1) # supply of TPP223, after powerup TPP performs an autoadjustment of parasitic capacitance. Lets power up periodically.
-
-TPP_RESTART_EVERY_MS = 600 * 1000
-
 # print (wave_array)
-LED_CURRENT_MAX = 750  # vorsicht: stromverbrauch
+LED_CURRENT_MAX = 250  # vorsicht: stromverbrauch
 COUNTER_MAX = 100
 
-BUTTON_TYPE = 'TPP223' # or 'switch_Y1_Y2'
-ignor_button = False
+MIN_TIME_BEAT_US = 20000
+MIN_TIME_BEAT_US = 1
+
+
 class Button:
     def __init__(self, pin):
-        self.ticks_ms = None
+        self.pin = PIN_BUTTON
+        self.ticks_us = None
         self._button_pressed_ms = None
-        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
-        ExtInt(
-            self.pin,
-            ExtInt.IRQ_RISING_FALLING,
-            Pin.PULL_UP,
-            callback=self._callback_button,
-        )
+        self._pulses = 3
 
     def get_button_pressed_ms(self):
         """
         return None: If button not pressed
         return duration_ms: if button was pressed
         """
+        if self._pulses > 0:
+            self._pulses -= 1
+            return 600
         duration_ms = self._button_pressed_ms
         self._button_pressed_ms = None
         return duration_ms
 
     def _callback_button(self, dummy):
-        global ignor_button
         # self.timer.init(period=10, mode=machine.Timer.ONE_SHOT, callback=self.callback_timer)
-        if ignor_button:
-            return
-        ticks_ms = timer_ms.get()
+        ticks_us = timer_us()
         while True:
-            duration_ms = timer_ms.get() - ticks_ms
-            if duration_ms > 10:
+            duration_us = timer_us() - ticks_us
+            if duration_us > 10000:
                 break
         unpressed = self.pin.value()
         if unpressed:
-            if self.ticks_ms is None:
+            if self.ticks_us is None:
                 return
-            self._button_pressed_ms = (timer_ms.get() - self.ticks_ms)
-            self.ticks_ms = None
+            self._button_pressed_ms = (timer_us() - self.ticks_us) // 1000
+            self.ticks_us = None
             return
-        self.ticks_ms = timer_ms.get()
+        self.ticks_us = timer_us()
 
 
-button = Button("Y1")
-
-class Radar:
-    def __init__(self, pin):
-        self._radar_detected = False
-        self.pin = Pin(pin, Pin.IN, Pin.PULL_UP)
-        ExtInt(
-            self.pin,
-            ExtInt.IRQ_RISING,
-            Pin.PULL_UP,
-            callback=self._callback_radar,
-        )
-
-    def _callback_radar(self, dummy):
-        print('Doppler radar signal detected')
-        self._radar_detected = True
-
-    def get_radar_detected(self):
-        """
-        return False: If radar not detected
-        return True: If radar detected
-        """
-        detected = self._radar_detected
-        self._radar_detected = False
-        return detected
-
-radar = Radar("Y7")
-
+button = Button(PIN_BUTTON)
 
 
 MODE_PULSES = 0
-MODE_MONOCOLOR_WAVES = 1
-MODE_MULTICOLOR_WAVES = 2
-MODE_UNDEFINED_01 = 3
-MODE_UNDEFINED_02 = 4
-MODES = 5
+MODE_WAVES = 1
 
-class timer_ms():
-    def __init__(self):
-        # The method `bitstream` disrupts the timer, therefore
-        # ticks_ms, ticks_cpu etc. would not work.
-        cpu_freq_Hz = 168000000
-        freq_timer_Hz = 2000
-        prescaler = int((cpu_freq_Hz / (2 * freq_timer_Hz)) - 1)
-        self.timer_ms = Timer(2, prescaler=prescaler, period=0x3FFFFFFF)
-        self.timer_ms.counter(0)
-    def get(self):
-        return self.timer_ms.counter() // 2
-    def check_overflow(self):
-        if self.timer_ms.counter() >= 2147483648: # 2**31
-            # Avoid timer overflow after about 12 days
-            print("machine.reset() to avoid timer overflow")
-            time.sleep(1.0)
-            machine.reset()
-
-timer_ms = timer_ms()
 
 class Mode:
     def __init__(self):
-        self.led_red = LED(1)
         self.led_green = LED(2)
-        # <<<<<<< HEAD
         self.mode = MODE_WAVES
         self.toggle_mode()
-        # =======
-        self.led_yellow = LED(3)
-        self.led_blue = LED(4)
-        self.reset()
-        # >>>>>>> 9cef0a9 (zeitbasis und kleine optimierungen)
 
     def set(self, mode):
         self.mode = mode
-        self.led_red.off()
-        self.led_green.off()
-        self.led_yellow.off()
-        self.led_blue.off()
-        if self.mode == MODE_MONOCOLOR_WAVES:
+        if self.mode == MODE_WAVES:
             self.led_green.on()
-        if self.mode == MODE_MULTICOLOR_WAVES:
-            self.led_yellow.on()
-        if self.mode == MODE_UNDEFINED_01:
-            self.led_blue.on()
-        if self.mode == MODE_UNDEFINED_02:
-            self.led_red.on()
-        #print("Mode: %s" % self.mode)
+        else:
+            self.led_green.off()
 
-    def next_mode(self):
-        self.set((self.mode + 1) % MODES)
+    def toggle_mode(self):
+        if self.mode == MODE_WAVES:
+            self.set(MODE_PULSES)
+        else:
+            self.set(MODE_WAVES)
 
-    def button_next_mode(self):
-        self.auto_mode_change = False
-        self.next_mode()
-
-    def check_auto_mode(self):
-        if self.auto_mode_change:
-            change_every_ms = 40000
-            if self.next_auto_mode_change_ms == None:
-                self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
-            if timer_ms.get() > self.next_auto_mode_change_ms:
-                self.next_auto_mode_change_ms = timer_ms.get() + change_every_ms
-                self.set((self.mode + 1) % MODES)
-
-    def reset(self):
-        self.set(MODE_PULSES)
-        self.next_auto_mode_change_ms = None
-        self.auto_mode_change = True
-        print("mode.reset() done")
 
 mode = Mode()
 
+
+def init_timer_us():
+    # The method `bitstream` disrupts the timer, therefore
+    # ticks_ms, ticks_cpu etc. would not work.
+    return time.ticks_us
+
+
+timer_us = init_timer_us()
+
 AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
 
-# <<<<<<< HEAD
 
 led_count = 5 * 96
-NEOPIXEL = neopixel.NeoPixel(pin=machine.Pin.board.Y12, led_count=led_count)
+NEOPIXEL = neopixel.NeoPixel(pin=PIN_LED, led_count=led_count)
 LEDSTRIP = ledstrip.Ledstrip(led_count)
 LEDSTRIP.clear()
-# =======
-if setup == 'standard_5_x_96':
-    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
-if setup == 'hombi_eg':
-# <<<<<<< HEAD
-    #NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
-    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= 484)
-# >>>>>>> e8180b2 (.)
-# =======
-    NP = neopixel.NeoPixel(machine.Pin.board.Y12, n= (2 * 5 * 96) + 45)
-# >>>>>>> c63f60c (.)
 
 
 class ListPulses:
@@ -264,30 +172,18 @@ class ListPulses:
 
 class IdleTimeResetter:
     def __init__(self):
-        self._last_idle_ticks_ms = None
-        self._last_tpp_reset_ms = 0
+        self._last_idle_ticks_us = None
 
     def time_over(self):
-        global ignor_button
-        if timer_ms.get() > self._last_tpp_reset_ms:
-            ignor_button = True
-            taster_tpp223.value(0) # supply of TPP223, after powerup TPP performs an autoadjustment of parasitic capacitance. Lets power up periodically.
-            time.sleep(1.0)
-            print("TPP223 restart power to calibrate parasitic capacitance")
-            taster_tpp223.value(1)
-            time.sleep(0.5)
-            ignor_button = False
-            self._last_tpp_reset_ms += TPP_RESTART_EVERY_MS
-
-        if self._last_idle_ticks_ms is None:
-            self._last_idle_ticks_ms = timer_ms.get()
+        if self._last_idle_ticks_us is None:
+            self._last_idle_ticks_us = timer_us()
             return False
 
-        idle_time_ms = timer_ms.get() - self._last_idle_ticks_ms
-        if idle_time_ms > 60 * 1000:
-            self._last_idle_ticks_ms = None
+        idle_time_us = timer_us() - self._last_idle_ticks_us
+        if idle_time_us > 60 * 1000 * 1000:
+            self._last_idle_ticks_us = None
             print("IdleTimeResetter: time_over")
-            mode.reset()
+            mode.set(MODE_PULSES)
             return True
         return False
 
@@ -299,109 +195,69 @@ class ShowPulses:
         self.pulse_generator = PulseGenerator(np=NEOPIXEL)
         self.idle_time_resetter = IdleTimeResetter()
         self._last_time_ms = time.ticks_ms()
-        # <<<<<<< HEAD
         self._last_time_us = timer_us()
         NEOPIXEL.write(ledstrip=LEDSTRIP)
-        # =======
-        self._last_time_ms = timer_ms.get()
-        NP.write()
-        # >>>>>>> 9cef0a9 (zeitbasis und kleine optimierungen)
 
     def calculate_next_beat(self):
         self.fade_out_trigger += 1
         if self.fade_out_trigger % COUNTER_MAX == 0:
-            time_ms = timer_ms.get()
-            duration_ms = time_ms - self._last_time_ms
-            self._last_time_ms = timer_ms.get()
+            time_us = timer_us()
+            duration_ms = time_us - self._last_time_us
+            self._last_time_us = timer_us()
 
             print(
-                "%0.0f bps, led_current=%d, mem_free=%d, mode=%d, pulses=%d"
+                "%0.2f beats per second, led_current=%d, mem_free=%d"
                 % (
-                    1000.0 * COUNTER_MAX / duration_ms,
+                    1000000.0 * COUNTER_MAX / duration_ms,
                     self.pulse_list.led_current(),
                     gc.mem_free(),
-                    mode.mode,
-                    len(self.pulse_list.pulse_list)
                 )
             )
             self.pulse_list.end_of_life()
             if self.pulse_list.is_empty():
                 if self.idle_time_resetter.time_over():
                     self.pulse_generator.reset()
-            else:
-                mode.check_auto_mode()
 
         duration_ms = button.get_button_pressed_ms()
-        current_at_limit = self.pulse_list.current_at_limit()
         if duration_ms is not None:
             print("Button %d ms" % duration_ms)
             if duration_ms > 3000:
-                mode.button_next_mode()
+                mode.toggle_mode()
                 return
-            pulse = None
+
+            current_at_limit = self.pulse_list.current_at_limit()
             if mode.mode == MODE_PULSES:
                 pulse = self.pulse_generator.get_next_pulse(
                     duration_ms, current_at_limit
                 )
-            if mode.mode == MODE_MONOCOLOR_WAVES:
-                pulse = self.pulse_generator.get_monocolor_wave(
+            else:
+                pulse = self.pulse_generator.get_next_wave(
                     duration_ms, current_at_limit
                 )
-            if mode.mode == MODE_MULTICOLOR_WAVES:
-                pulse = self.pulse_generator.get_multicolor_wave(
-                    duration_ms, current_at_limit
-                )
-            if mode.mode == MODE_UNDEFINED_01:
-                pulse = self.pulse_generator.get_next_wave_01(
-                    duration_ms, current_at_limit
-                )
-
-            if pulse is not None:
-                self.pulse_list.append(pulse)
-
-            if mode.mode == MODE_UNDEFINED_02:
-                colors = random.randrange(3,6)
-                index = random.randrange(len(PREDEFINED_COLORS_RGB256)-3)
-                colorlist = PREDEFINED_COLORS_RGB256[index:index+colors]
-                #print(colorlist)
-                offset = 0
-                for color in colorlist:
-                    pulse = Pulse(
-                        strip_length_l=NP.n,
-                        color_rgb256=color,
-                        waveform=WaveformPulse(7),
-                        speed_divider_bpl=2,  # 120,
-                        lifetime_l=int(NP.n * 1.3),
-                        killer=False,
-                    )
-                    pulse.change_startposition_l(-offset*9)
-                    self.pulse_list.append(pulse)
-                    offset += 1
+            # print("pulse", pulse._waveform256)
+            self.pulse_list.append(pulse)
 
         if AUTO_ON:
             if random.random() < 0.0001:
-                pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
-                self.pulse_list.append(pulse)
-
-        if radar.get_radar_detected() and self.pulse_list.is_empty():
-            pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
-            self.pulse_list.append(pulse)
+                self.pulse_list.append(create_random_pulse())
 
         self.pulse_list.show()
 
     def run_forever(self):
         while True:
-            time_ms = timer_ms.get()
+            time_us = timer_us()
 
             self.calculate_next_beat()
 
-            slowdown_ms = MIN_TIME_BEAT_MS + time_ms - timer_ms.get()
-            if slowdown_ms > 0:
-                # print("slowdown_ms", slowdown_ms)
-                time.sleep_ms(slowdown_ms)
-                timer_ms.check_overflow()
-
+            slowdown_us = MIN_TIME_BEAT_US + time_us - timer_us()
+            if slowdown_us > 0:
+                # print("slowdown_us", slowdown_us)
+                time.sleep_us(slowdown_us)
+                if time_us >= 2147483648:  # 2**31
+                    # Reset timer after ~8 minutes
+                    timer_us(0)
 
 
 show_dinger = ShowPulses()
 show_dinger.run_forever()
+

@@ -130,8 +130,8 @@ class PulseGenerator:
         return Pulse(
             strip_length_l=self._np.led_count,
 # =======
-        pulse = Pulse(
-            strip_length_l=self._np.n,
+        # pulse = Pulse(
+        #     strip_length_l=self._np.n,
 # >>>>>>> 63a3556 (.)
             waveform=WaveformPulse(length_l),
             color_rgb256=random.choice(PREDEFINED_COLORS_RGB256),
@@ -139,8 +139,8 @@ class PulseGenerator:
             #lifetime_l=random.choice(PREDEFINED_LIFETIMES_L) + DIMM_TIME_L,
             lifetime_l=lifetime_l,
         )
-        pulse.change_startposition_l(int(length_l*0.1))
-        return(pulse)
+        # pulse.change_startposition_l(int(length_l*0.1))
+        # return(pulse)
 
     def get_radar_pulse(self, duration_ms, current_at_limit):
         length_l = 3
