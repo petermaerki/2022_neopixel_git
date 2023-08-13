@@ -18,7 +18,18 @@ if False:
 
     performance_test.test()
 
+class Wdt:
+    def __init__(self):
+        self._wdt = None
+    def enable(self):
+        self._wdt = machine.WDT(timeout=30000) # ms
+    def feed(self):
+        self._wdt.feed()
 
+startup_s = time.time()
+
+wdt = Wdt()
+wdt.enable()
 
 setup = 'hombi_eg'
 #setup = 'standard_5_x_96'
@@ -372,6 +383,11 @@ class ShowPulses:
                 # print("slowdown_ms", slowdown_ms)
                 time.sleep_ms(slowdown_ms)
                 timer_ms.check_overflow()
+                if  time.time() - startup_s > 24*3600:
+                    print('restart every 24h')
+                    time.sleep_ms(2000)
+                    machine.reset()
+            wdt.feed()
 
 
 
