@@ -193,7 +193,8 @@ class Mode:
 
 mode = Mode()
 
-AUTO_ON = False  # ohne automatik leuchtet es erst auf knopfdruck
+AUTO_ON = False  # es wird zufaellig immer mal wieder ein Puls los geschickt
+RADAR_ON = False # wenn Radar detektiert wird so wird ein Puls los geschickt
 
 if setup == 'standard_5_x_96':
     NP = neopixel.NeoPixel(machine.Pin.board.Y12, n=5 * 96)
@@ -366,9 +367,10 @@ class ShowPulses:
                 pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
                 self.pulse_list.append(pulse)
 
-        if radar.get_radar_detected() and self.pulse_list.is_empty():
-            pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
-            self.pulse_list.append(pulse)
+        if RADAR_ON:
+            if radar.get_radar_detected() and self.pulse_list.is_empty():
+                pulse = self.pulse_generator.get_radar_pulse(0, current_at_limit)
+                self.pulse_list.append(pulse)
 
         self.pulse_list.show(NP)
 
